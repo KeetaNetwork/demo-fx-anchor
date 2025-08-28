@@ -1,0 +1,13 @@
+#! /usr/bin/env bash
+
+inDir="$1"
+outDir="$2"
+if [ -z "${outDir}" -o -z "${inDir}" ]; then
+	echo "Usage: make-package-info <input-directory> <output-directory>"
+	exit 1
+fi
+
+# Update "package.json" file
+jq --tab -M '
+	del(.main, .scripts, .engines, .directories, .homepage, .oldDependencies, .repository, .private)
+' < "${inDir}/package.json" > "${outDir}/package.json"

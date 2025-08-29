@@ -7,6 +7,7 @@ import { getEstimateSchema, createQuoteSchema, executeExchangeSchema, getExchang
 import { AppError } from "./error";
 import { getTokenInfo } from "./utils/network";
 import { Numeric } from "./utils/numeric";
+import { calculateExchangeRate } from "./utils/exchange-rate";
 
 // Check if the request is signed and valid.
 // if (!(await verifySignedData(data.request))) {
@@ -31,52 +32,46 @@ const app = new Hono<ServerEnv>()
 		// Step 1: Look up the token information for both currencies
 		logger?.debug(`Looking up tokens for ${request.from} -> ${request.to}`)
 
-		const fromToken = await fxClient.resolver.lookupToken(request.from)
-		const toToken = await fxClient.resolver.lookupToken(request.to)
+		const [fromToken, toToken] = await Promise.all([
+			fxClient.resolver.lookupToken(request.from),
+			fxClient.resolver.lookupToken(request.to)
+		])
 
 		if (!fromToken || !toToken) {
 			throw(new AppError(`Currency ${!fromToken ? request.from : request.to} not found`));
 		}
 
-		// Step 2: Calculate exchange rate (mock for now - replace with actual rate service)
-		// For demo purposes, using a simple mock rate
-		const mockRates = {
-			'USD-EUR': 0.85,
-			'EUR-USD': 1.18,
-			'USD-BTC': 0.000023,
-			'BTC-USD': 43000
-		}
+		const [fromTokenInfo, toTokenInfo] = await Promise.all([
+			getTokenInfo(userClient, fromToken.token),
+			getTokenInfo(userClient, toToken.token)
+		])
 
-		// eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-		const rateKey = `${request.from}-${request.to}` as keyof typeof mockRates
-		// eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-		const reverseRateKey = `${request.to}-${request.from}` as keyof typeof mockRates
-		let rate = mockRates[rateKey] || (1 / (mockRates[reverseRateKey] || 1))
+		// Step 2: Calculate exchange rate
+		let rate = calculateExchangeRate(request.from, request.to)
 
 		// Step 3: Calculate converted amount based on affinity
 		let toAmount: string
 		let convertedAmount: string
 		if (request.affinity === 'from') {
-			convertedAmount = request.amount.mul(rate).toFixed()
+			convertedAmount = request.amount.mul(rate).toFixed(toTokenInfo.decimalPlaces)
 			toAmount = convertedAmount
 		} else {
 			// If affinity is 'to', the amount is what they want to receive
 			toAmount = request.amount.toString()
-			convertedAmount = request.amount.div(rate).toFixed()
+			convertedAmount = request.amount.div(rate).toFixed(fromTokenInfo.decimalPlaces)
 			rate = request.amount.div(request.amount.div(rate)).toNumber()
 		}
 		logger?.debug(`Calculated rate: ${rate}, converted amount: ${convertedAmount}, to amount: ${toAmount}`)
 
 		// Step 4: Check balance
-		const tokenInfo = await getTokenInfo(userClient, toToken.token)
 		const balance = new Numeric(await userClient.balance(toToken.token))
-		logger?.debug(`Balance for ${request.to}: ${balance.toDecimalString(tokenInfo.decimalPlaces)}`)
+		logger?.debug(`Balance for ${request.to}: ${balance.toDecimalString(toTokenInfo.decimalPlaces)}`)
 
-		const requestedAmount = Numeric.fromDecimalString(toAmount, tokenInfo.decimalPlaces)
-		logger?.debug(`Requested amount: ${requestedAmount.toDecimalString(tokenInfo.decimalPlaces)}`)
+		const requestedAmount = Numeric.fromDecimalString(toAmount, toTokenInfo.decimalPlaces)
+		logger?.debug(`Requested amount: ${requestedAmount.toDecimalString(toTokenInfo.decimalPlaces)}`)
 
 		if (balance.valueOf() < requestedAmount.valueOf()) {
-			throw(new AppError(`Insufficient balance. Available: ${balance.toDecimalString(tokenInfo.decimalPlaces)}, Required: ${requestedAmount.toDecimalString(tokenInfo.decimalPlaces)}`));
+			throw(new AppError(`Insufficient balance. Available: ${balance.toDecimalString(toTokenInfo.decimalPlaces)}, Required: ${requestedAmount.toDecimalString(toTokenInfo.decimalPlaces)}`));
 		}
 
 		// Step 5: Calculate expected cost (network fees, processing fees)
@@ -111,19 +106,25 @@ const app = new Hono<ServerEnv>()
 	.post("/anchor/createQuote", validator("json", (i: CreateQuoteSchema) => v.parse(createQuoteSchema, i)), async c => {
 		return(c.json({
 			ok: true,
+			request: {
+				from: 'USD',
+				to: 'EUR',
+				amount: 100,
+				affinity: 'from'
+			},
 			quote: {
-				rate: 0,
-				amount: "",
-				affinity: "from",
+				account: c.get("userClient").account.publicKeyString.get(),
+				rate: '0.88',
+				convertedAmount: '88',
 				signed: {
-					nonce: "",
-					timestamp: "",
-					signature: ""
+					nonce: crypto.randomUUID(),
+					timestamp: (new Date()).toISOString(),
+					signature: ''
 				}
 			},
 			cost: {
-				amount: "",
-				token: c.get("userClient").baseToken.publicKeyString.toString()
+				amount: '5',
+				token: c.get("userClient").baseToken.publicKeyString.get()
 			}
 		}));
 	})
@@ -134,17 +135,17 @@ const app = new Hono<ServerEnv>()
 	.post("/anchor/executeExchange", validator("json", (i: ExecuteExchangeSchema) => v.parse(executeExchangeSchema, i)), async c => {
 		return(c.json({
 			ok: true,
-			blockhash: ""
+			exchangeID: crypto.randomUUID()
 		}));
 	})
 
 	/**
 	 * Get the status of a token swap
 	 */
-	.get("/anchor/getExchangeStatus/:blockhash", validator("param", (i: GetExchangeStatusParamSchema) => v.parse(getExchangeStatusParamSchema, i)), async c => {
+	.get("/anchor/getExchangeStatus/:exchangeID", validator("param", (i: GetExchangeStatusParamSchema) => v.parse(getExchangeStatusParamSchema, i)), async c => {
 		return(c.json({
 			ok: true,
-			blockhash: ""
+			exchangeID: c.req.valid("param").exchangeID
 		}));
 	})
 

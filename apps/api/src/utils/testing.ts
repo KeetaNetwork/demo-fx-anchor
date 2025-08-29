@@ -1,5 +1,6 @@
 import { KeetaNet } from "@keetanetwork/anchor";
 import * as Anchor from "@keetanetwork/anchor";
+import type { Logger } from "./logger";
 
 /**
  * Builds the token blocks for a given user client builder.
@@ -28,13 +29,13 @@ async function buildTokenBlocks(builder: ReturnType<KeetaNet.UserClient['initBui
 	return(tokenAccount);
 }
 
-export async function setup() {
+export async function setup(logger?: Logger) {
 	/**
 	 * Setup FX Provider
 	 */
 	const fxSeed = KeetaNet.lib.Account.generateRandomSeed({ asString: true });
 	const fxAccount = KeetaNet.lib.Account.fromSeed(fxSeed, 0)
-	console.log("fxAccount =", fxAccount.publicKeyString.get());
+	logger?.log("SETUP", "fxAccount =", fxAccount.publicKeyString.get());
 	const fxUserClient = KeetaNet.UserClient.fromNetwork('test', fxAccount)
 
 	/**
@@ -42,7 +43,7 @@ export async function setup() {
 	 */
 	const lpSeed = KeetaNet.lib.Account.generateRandomSeed({ asString: true });
 	const lpAccount = KeetaNet.lib.Account.fromSeed(lpSeed, 0)
-	console.log("lpAccount =", lpAccount.publicKeyString.get());
+	logger?.log("SETUP", "lpAccount =", lpAccount.publicKeyString.get());
 	const lpUserClient = KeetaNet.UserClient.fromNetwork('test', lpAccount);
 
 	// Create tokens
@@ -64,7 +65,7 @@ export async function setup() {
 	 */
 	const resolverSeed = KeetaNet.lib.Account.generateRandomSeed({ asString: true });
 	const resolverAccount = KeetaNet.lib.Account.fromSeed(resolverSeed, 0)
-	console.log("resolverAccount =", resolverAccount.publicKeyString.get());
+	logger?.log("SETUP", "resolverAccount =", resolverAccount.publicKeyString.get());
 	const resolverUserClient = KeetaNet.UserClient.fromNetwork('test', resolverAccount)
 
 	await resolverUserClient.setInfo({

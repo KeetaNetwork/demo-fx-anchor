@@ -1,9 +1,6 @@
 import * as v from 'valibot';
-import * as KeetaNetAnchor from '@keetanetwork/anchor';
 import * as CurrencyInfo from '@keetanetwork/currency-info';
 import Decimal from 'decimal.js';
-
-const { KeetaNet } = KeetaNetAnchor;
 
 const currencies = CurrencyInfo.Currency.allCurrencyCodes;
 
@@ -45,6 +42,6 @@ export const executeExchangeSchema = v.object({
 export type ExecuteExchangeSchema = v.InferInput<typeof executeExchangeSchema>;
 
 export const getExchangeStatusParamSchema = v.object({
-	blockhash: v.pipe(v.string(), v.check(i => !!(new KeetaNet.lib.Block.Hash(i)).toString(), "Invalid blockhash"))
+	exchangeID: requiredString
 });
 export type GetExchangeStatusParamSchema = v.InferInput<typeof getExchangeStatusParamSchema>;

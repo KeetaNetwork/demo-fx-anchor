@@ -1,4 +1,4 @@
-import * as KeetaNetAnchor from "@keetanetwork/anchor/client";
+import * as KeetaNetAnchor from "@keetanetwork/anchor";
 
 function formatSignedData(account: InstanceType<typeof KeetaNetAnchor.KeetaNet.lib.Account>, nonce?: string, timestamp?: string | Date): { nonce: string; timestamp: string; verificationData: Buffer; } {
 	nonce ??= crypto.randomUUID();

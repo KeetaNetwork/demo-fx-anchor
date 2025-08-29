@@ -10,7 +10,7 @@ const currencies = CurrencyInfo.Currency.allCurrencyCodes;
 const currencySchema = v.pipe(v.string(), v.picklist(currencies));
 const requiredString = v.pipe(v.string("Required"), v.minLength(1, "Required"))
 
-export const createEstimateSchema = v.object({
+export const getEstimateSchema = v.object({
 	request: v.object({
 		from: currencySchema,
 		to: currencySchema,
@@ -18,12 +18,23 @@ export const createEstimateSchema = v.object({
 		affinity: v.pipe(requiredString, v.picklist(['from', 'to']))
 	})
 });
+export type GetEstimateSchema = v.InferInput<typeof getEstimateSchema>;
 
-export const getQuoteSchema = createEstimateSchema
+export const createQuoteSchema = getEstimateSchema
+export type CreateQuoteSchema = v.InferInput<typeof createQuoteSchema>;
 
-export const createExchangeSchema = v.object({
+export const executeExchangeSchema = v.object({
 	request: v.object({
-		...createEstimateSchema.entries.request.entries,
+		/**
+		 * quote
+		 * block
+		 */
+		encodedBlock: requiredString,
+		from: currencySchema,
+		to: currencySchema,
+		rate: v.pipe(v.union([requiredString, v.number()]), v.transform(i => new Decimal(i)), v.check(i => i.greaterThan(0), "Must be greater than 0")),
+		amount: v.pipe(v.union([requiredString, v.number()]), v.transform(i => new Decimal(i)), v.check(i => i.greaterThan(0), "Must be greater than 0")),
+		affinity: v.pipe(requiredString, v.picklist(['from', 'to'])),
 		signature: v.object({
 			timestamp: requiredString,
 			nonce: requiredString,
@@ -31,7 +42,9 @@ export const createExchangeSchema = v.object({
 		})
 	})
 })
+export type ExecuteExchangeSchema = v.InferInput<typeof executeExchangeSchema>;
 
 export const getExchangeStatusParamSchema = v.object({
 	blockhash: v.pipe(v.string(), v.check(i => !!(new KeetaNet.lib.Block.Hash(i)).toString(), "Invalid blockhash"))
 });
+export type GetExchangeStatusParamSchema = v.InferInput<typeof getExchangeStatusParamSchema>;

@@ -6,12 +6,17 @@
 		"tsc": "tsc",
 		"tsup": "tsup",
 		"dev": "make do-dev-server",
-		"build": "make dist"
+		"build": "make dist",
+		"test": "vitest",
+		"test:ui": "vitest --ui",
+		"test:coverage": "vitest --coverage"
 	},
 	"devDependencies": {
 		"@keetanetwork/anchor": "file:../../../anchor/keetanetwork-anchor-0.0.3.tgz",
 		"@keetanetwork/currency-info": "1.2.5",
-		"typescript": "5.8.3"
+		"@vitest/ui": "3.2.4",
+		"typescript": "5.8.3",
+		"vitest": "3.2.4"
 	},
 	"dependencies": {
 		"@hono/node-server": "1.18.1",

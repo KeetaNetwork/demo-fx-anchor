@@ -6,11 +6,17 @@ import { Hono } from "hono";
 
 import { cors } from "hono/cors";
 import { createMiddleware } from "hono/factory";
+import * as Anchor from "@keetanetwork/anchor";
+import { ValiError } from "valibot";
+import { AppError } from "./error";
+
+type ServerLogger = Pick<typeof console, 'log' | 'warn' | 'error' | 'debug' | 'info'>
 
 export interface ApiServerConfig {
 	server: {
 		prefix?: string;
 		port?: number;
+		logger?: ServerLogger;
 	};
 
 	/**
@@ -20,78 +26,91 @@ export interface ApiServerConfig {
 		/**
 		 * The FX anchor account
 		 */
-		seed: string;
-		index: number;
+		fxAccount: NonNullable<Parameters<typeof Anchor.KeetaNet.UserClient.fromNetwork>[1]>;
+		resolverAccount?: InstanceType<typeof Anchor.KeetaNet.lib.Account>;
 	}
 }
 
 export interface ServerEnv {
 	Variables: {
+		log?: ServerLogger;
 		config: ApiServerConfig;
-		// db: KeetaNetKYCDemoPostgreSQL;
+		userClient: InstanceType<typeof Anchor.KeetaNet.UserClient>;
+		fxClient: InstanceType<typeof Anchor.FX.Client>;
 	};
 }
 
-export async function createApiServer(config: ApiServerConfig) {
+export function createApp(config: ApiServerConfig): Hono<ServerEnv> {
 	// Default values for prefix and port
-	const { prefix = "/api", port = 3010 } = config.server;
+	const { prefix = "/api" } = config.server;
+
+	// KeetaNet Setup
+	const fxAccount = config.keetaNet.fxAccount;
+	const userClient = Anchor.KeetaNet.UserClient.fromNetwork('test', fxAccount);
+	const fxClient = new Anchor.FX.Client(
+		userClient,
+		config.keetaNet.resolverAccount ? ({
+			root: config.keetaNet.resolverAccount
+		}) : (
+			undefined
+		)
+	);
+
+	const logger = config.server.logger;
+
+	// Create a new Hono app
+	const honoApp = new Hono<ServerEnv>();
+
+	// Enable CORS for all origins
+	honoApp.use(cors({ origin: "*" }));
+
+	// Set the config in the context
+	honoApp.use(
+		createMiddleware<ServerEnv>(
+			async (c, next) => {
+				c.set("config", config);
+				c.set("log", logger);
+				c.set("userClient", userClient);
+				c.set("fxClient", fxClient);
+				await next();
+			}
+		)
+	);
+
+	// Use the main app
+	honoApp.route(prefix, app);
+
+	// Handle not found
+	honoApp.notFound((c) => c.json({ ok: false, error: "Not Found" }, 404));
+
+	// Handle errors
+	honoApp.onError((err, c) => {
+		if (err instanceof ValiError || err instanceof AppError) {
+			logger?.debug(`${c.req.method} ${c.req.url} - Error:`, err.message);
+			return(c.json(
+				{ ok: false, error: err.message ?? "Unknown error occurred" },
+				400
+			));
+		}
+
+		logger?.error(`${c.req.method} ${c.req.url} - Error:`, err);
+		return(c.json(
+			{ ok: false, error: err.message ?? "Unknown error occurred" },
+			500
+		));
+	});
+
+	return(honoApp);
+}
+
+export async function createApiServer(config: ApiServerConfig) {
+	// Default value for port
+	const { port = 8080 } = config.server;
 
 	// Start the app
 	const { server, info }: { server: ServerType; info: AddressInfo } =
 		await new Promise(resolve => {
-			// Create a new Hono app
-			const serverApp = new Hono();
-
-			// Enable CORS for all origins
-			serverApp.use(cors({ origin: "*" }));
-
-			// Set the config in the context
-			serverApp.use(
-				createMiddleware<{ Variables: { config: ApiServerConfig }}>(
-					async (c, next) => {
-						c.set("config", config);
-						await next();
-					}
-				)
-			);
-
-			// Create the database middleware
-			// serverApp.use(
-			// 	createMiddleware<ServerEnv>(async (c, next) => {
-			// 		// Connect with the database
-			// 		const db = await KeetaNetKYCDemoPostgreSQL.createFromURL(
-			// 			config.server.database.url,
-			// 			{
-			// 				tableName: config.server.database.tableName,
-			// 				databaseCert: config.server.database.cert
-			// 			}
-			// 		);
-
-			// 		// Set the database in the context
-			// 		c.set("db", db);
-
-			// 		// Call the next middleware
-			// 		await next();
-
-			// 		// Close the database connection
-			// 		await db.close();
-			// 	})
-			// );
-
-			// Use the main app
-			serverApp.route(prefix, app);
-
-			// Handle not found
-			serverApp.notFound((c) => c.json({ ok: false, error: "Not Found" }, 404));
-
-			// Handle errors
-			serverApp.onError((err, c) => {
-				console.error(`${c.req.method} ${c.req.url} - Error:`, err);
-				return(c.json(
-					{ ok: false, error: err.message ?? "Unknown error occurred" },
-					500
-				));
-			});
+			const serverApp = createApp(config);
 
 			// Start the server
 			const createdServer = serve(

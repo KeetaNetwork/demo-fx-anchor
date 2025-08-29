@@ -1,21 +1,24 @@
+import { KeetaNet } from "@keetanetwork/anchor";
 import type { ApiServerConfig } from "./server";
 import { createApiServer } from "./server";
 import { getEnv } from "./utils/config";
-// import { getConfigFromEnvironment, getEnv } from "./utils/config";
+import type { LogLevel } from "./utils/logger";
+import { Logger } from "./utils/logger";
 
 async function main(): Promise<0 | 1> {
 
-	// const db = getConfigFromEnvironment('server')
+	// eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+	const logger = new Logger(getEnv('APP_LOG_LEVEL', 'WARN') as LogLevel);
 
 	const config: ApiServerConfig = {
 		server: {
 			prefix: getEnv('APP_PREFIX', '/api'),
-			port: parseInt(getEnv('PORT', '8080'), 10)
+			port: parseInt(getEnv('PORT', '8080'), 10),
+			logger
 		},
 
 		keetaNet: {
-			seed: "",
-			index: 0
+			fxAccount: KeetaNet.lib.Account.fromSeed(getEnv('KEETANET_SEED'), 0)
 		}
 	}
 
@@ -25,7 +28,7 @@ async function main(): Promise<0 | 1> {
 		({ server, info } = await createApiServer(config));
 
 		const address = info.address === "::" ? "localhost" : info.address;
-		console.log(`Server is running at http://${address}:${info.port}`);
+		logger?.log(`Server is running at http://${address}:${info.port}`);
 
 		// graceful shutdown
 		process.on('beforeExit', function() {
@@ -34,7 +37,7 @@ async function main(): Promise<0 | 1> {
 			}
 		});
 	} catch (error: unknown) {
-		console.error("Error starting server:", error);
+		logger?.error("Error starting server:", error);
 	}
 
 	await new Promise<void>(function(resolve) {

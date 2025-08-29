@@ -22,20 +22,16 @@ export type CreateQuoteSchema = v.InferInput<typeof createQuoteSchema>;
 
 export const executeExchangeSchema = v.object({
 	request: v.object({
-		/**
-		 * quote
-		 * block
-		 */
-		encodedBlock: requiredString,
-		from: currencySchema,
-		to: currencySchema,
-		rate: v.pipe(v.union([requiredString, v.number()]), v.transform(i => new Decimal(i)), v.check(i => i.greaterThan(0), "Must be greater than 0")),
-		amount: v.pipe(v.union([requiredString, v.number()]), v.transform(i => new Decimal(i)), v.check(i => i.greaterThan(0), "Must be greater than 0")),
-		affinity: v.pipe(requiredString, v.picklist(['from', 'to'])),
-		signature: v.object({
-			timestamp: requiredString,
-			nonce: requiredString,
-			signature: requiredString
+		block: requiredString,
+		quote: v.object({
+			account: requiredString,
+			rate: requiredString,
+			convertedAmount: requiredString,
+			signed: v.object({
+				timestamp: requiredString,
+				nonce: requiredString,
+				signature: v.string()
+			})
 		})
 	})
 })

@@ -5,6 +5,10 @@ import type { AppSchema } from './app'
 import { Logger } from './utils/logger'
 import { setup } from './utils/testing'
 import { calculateExchangeRate } from './utils/exchange-rate'
+import { KeetaNet } from '@keetanetwork/anchor'
+import { getTokenInfo } from './utils/network'
+import { Numeric } from './utils/numeric'
+import { binaryToUrlSafeBase64 } from './utils/base64'
 
 // Mock the calculateExchangeRate function
 vi.mock('./utils/exchange-rate', () => ({
@@ -18,7 +22,7 @@ describe('API Tests', async () => {
 	const logger = new Logger('INFO');
 
 	// Setup test environment
-	const { fxAccount, fxUserClient, lpAccount, lpUserClient, resolverAccount, resolverUserClient, tokens } = await setup(logger);
+	const { fxAccount, fxUserClient, lpUserClient, resolverAccount, tokens } = await setup(logger);
 
 	// Mock config for testing
 	const testConfig: ApiServerConfig = {
@@ -331,5 +335,109 @@ describe('API Tests', async () => {
 			})
 			expect(response.status).toBe(400)
 		})
+	})
+
+	describe('executeExchange', async () => {
+		// Create a dummy user account for testing
+		const userAccount = KeetaNet.lib.Account.fromSeed(KeetaNet.lib.Account.generateRandomSeed(), 0);
+		const userClient = KeetaNet.UserClient.fromNetwork('test', userAccount);
+
+		// Send funds to user account
+		const ADD_USER_USD = 1_000_00n
+		await lpUserClient.send(userAccount, ADD_USER_USD, tokens.USD, undefined, { account: tokens.USD })
+
+		it('should execute exchange with valid quote', async () => {
+			// Request
+			const request = {
+				from: 'USD',
+				to: 'EUR',
+				amount: '100',
+				affinity: 'from'
+			}
+
+			// Quote
+			const quote = {
+				account: fxAccount.publicKeyString.get(),
+				rate: '1.18',
+				convertedAmount: '118.00',
+				signed: {
+					nonce: crypto.randomUUID(),
+					timestamp: (new Date()).toISOString(),
+					signature: ""
+				}
+			}
+
+			/**
+			 * Verify before exchange
+			 */
+			// Check user account balance before exchange
+			const [userBalanceUSDBefore, userBalanceEURBefore] = await Promise.all([
+				userClient.balance(tokens.USD),
+				userClient.balance(tokens.EUR)
+			]);
+			expect(userBalanceUSDBefore).toBe(ADD_USER_USD);
+			expect(userBalanceEURBefore).toBe(0n);
+
+			// Get FX account balance before exchange
+			const [fxBalanceUSDBefore, fxBalanceEURBefore] = await Promise.all([
+				fxUserClient.balance(tokens.USD),
+				fxUserClient.balance(tokens.EUR)
+			]);
+
+			// Get token info
+			const [sendTokenInfo, receiveTokenInfo] = await Promise.all([
+				getTokenInfo(fxUserClient, tokens.USD),
+				getTokenInfo(fxUserClient, tokens.EUR)
+			]);
+
+			/**
+			 * Create SWAP Block
+			 */
+			// Calculate amount
+			const sendAmount = Numeric.fromDecimalString(request.amount, sendTokenInfo.decimalPlaces);
+			const receiveAmount = Numeric.fromDecimalString(quote.convertedAmount, receiveTokenInfo.decimalPlaces);
+
+			// Create the transaction
+			const builder = userClient.initBuilder()
+			builder.send(fxAccount, sendAmount.valueOf(), tokens.USD)
+			builder.receive(fxAccount, receiveAmount.valueOf(), tokens.EUR, true)
+
+			// Compute the transaction and get the block
+			const { blocks: [computedBlock] } = await builder.computeBlocks()
+
+			// Get the block bytes and convert to Uint8Array
+			const bytes = computedBlock.toBytes()
+			const uint8Array = new Uint8Array(bytes)
+
+			// Convert to URL-safe Base64
+			const block = binaryToUrlSafeBase64(uint8Array)
+
+			// Execute the exchange
+			const response = await client.anchor.executeExchange.$post({ json: { request: { block, quote }}})
+			const data = await response.json()
+			expect(response.status).toBe(200)
+			expect(data.ok).toBeTruthy()
+			expect(data.exchangeID).toBeDefined()
+
+			/**
+			 * Verify after exchange
+			 */
+			const [userBalanceUSDAfter, userBalanceEURAfter] = await Promise.all([
+				userClient.balance(tokens.USD),
+				userClient.balance(tokens.EUR)
+			]);
+			expect(userBalanceUSDAfter).toBe(ADD_USER_USD - sendAmount.valueOf());
+			expect(userBalanceEURAfter).toBe(receiveAmount.valueOf());
+
+			// Get FX account balance after exchange
+			const [fxBalanceUSDAfter, fxBalanceEURAfter] = await Promise.all([
+				fxUserClient.balance(tokens.USD),
+				fxUserClient.balance(tokens.EUR)
+			]);
+			expect(fxBalanceUSDAfter).toBe(fxBalanceUSDBefore + sendAmount.valueOf());
+			expect(fxBalanceEURAfter).toBe(fxBalanceEURBefore - receiveAmount.valueOf());
+		});
+
+		// XXX:TODO: Add more tests for executeExchange (invalid quote, invalid block, etc)
 	})
 })

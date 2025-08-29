@@ -8,6 +8,8 @@ import { AppError } from "./error";
 import { getTokenInfo } from "./utils/network";
 import { Numeric } from "./utils/numeric";
 import { calculateExchangeRate } from "./utils/exchange-rate";
+import { KeetaNet } from "@keetanetwork/anchor";
+import { urlSafeBase64ToBinary } from "./utils/base64";
 
 // Check if the request is signed and valid.
 // if (!(await verifySignedData(data.request))) {
@@ -198,9 +200,55 @@ const app = new Hono<ServerEnv>()
 	 * Execute a token swap
 	 */
 	.post("/anchor/executeExchange", validator("json", (i: ExecuteExchangeSchema) => v.parse(executeExchangeSchema, i)), async c => {
+		// Get the parsed request data.
+		const { request } = c.req.valid("json")
+		const userClient = c.get("userClient")
+
+		// Step 1: Validate quote and Signature
+		// XXX:TODO: Implement validation logic
+
+		// Step 2: Get the SWAP Block
+		// Get the block buffer from the URL-safe base64 string
+		const blockBuffer = urlSafeBase64ToBinary(request.block).buffer
+
+		// Create a new block instance
+		const block = new KeetaNet.lib.Block(blockBuffer)
+
+		// Get the send and receive operations
+		const sendOperation = block.operations.find(({ type }) => KeetaNet.lib.Block.OperationType.SEND === type)
+		const receiveOperation = block.operations.find(({ type }) => KeetaNet.lib.Block.OperationType.RECEIVE === type)
+
+		// Check if the operations are valid
+		if (!sendOperation || !receiveOperation || sendOperation.type !== KeetaNet.lib.Block.OperationType.SEND || receiveOperation.type !== KeetaNet.lib.Block.OperationType.RECEIVE) {
+			throw(new AppError("Invalid block operations"));
+		}
+
+		// Check if I am the destination of the swap
+		if (!sendOperation.to.comparePublicKey(userClient.account)) {
+			throw(new AppError("This swap isn't for me. The destination account does not match."));
+		}
+
+		// Create the transaction builder
+		const builder = userClient.initBuilder()
+
+		// Add the send operation to the builder
+		builder.send(block.account, receiveOperation.amount, receiveOperation.token)
+
+		// Compute the send operation block
+		const { blocks: [computedSendBlock] } = await builder.computeBlocks()
+
+		/**
+		 * Transmit the blocks
+		 *
+		 * To execute the swap, is necessary to transmit the send block
+		 * first (from the account that is accepting the swap) and then
+		 * the swap block with the send and receive operations.
+		 */
+		await userClient.client.transmit([computedSendBlock, block])
+
 		return(c.json({
 			ok: true,
-			exchangeID: crypto.randomUUID()
+			exchangeID: computedSendBlock.hash.toString()
 		}));
 	})
 

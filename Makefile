@@ -40,20 +40,6 @@ node_modules: node_modules/.done
 # Build targets
 # 
 
-# Client
-apps/client/dist/.done:
-	$(MAKE) -C apps/client dist
-
-dist/client/.done: apps/client/dist/.done
-	@mkdir -p dist
-	rm -rf dist/client
-	mkdir dist/client
-	cp -r apps/client/dist/* dist/client/
-	@touch dist/client/.done
-
-dist/client: dist/client/.done
-	@touch dist/client
-
 # API
 apps/api/dist/.done:
 	$(MAKE) -C apps/api dist
@@ -80,8 +66,8 @@ dist/cloud: dist/cloud/.done
 	@touch dist/cloud
 
 # Final distribution target
-dist/.done: dist/api dist/client dist/cloud utils/make-package-info
-	cp npm-shrinkwrap.json dist/
+dist/.done: dist/api dist/cloud utils/make-package-info
+	cp package-lock.json dist/
 	./utils/make-package-info . dist/
 	@touch dist/.done
 
@@ -100,12 +86,10 @@ do-npm-pack: dist
 # 
 clean:
 	rm -rf dist
-	$(MAKE) -C apps/client clean
 	$(MAKE) -C apps/api clean
 
 distclean: clean
 	rm -rf node_modules
-	$(MAKE) -C apps/client distclean
 	$(MAKE) -C apps/api distclean
 
 .PHONY: all help test do-dev-server do-lint do-npm-pack clean distclean

@@ -32,7 +32,7 @@ dist/.done: node_modules tsconfig.json tsup.config.ts $(shell find src -type f -
 	npm run tsup -- --outDir ./dist
 	cp .npmrc dist/.npmrc
 	node -p 'const input = JSON.parse(fs.readFileSync(0, "utf-8")); delete input["scripts"]; delete input["devDependencies"]; JSON.stringify(input, undefined, 4);' < package.json > dist/package.json
-	node -p "((s) => JSON.stringify({ ...s, packages: Object.fromEntries(Object.entries(s.packages).map(([k, v]) => [k, k === '' ? { ...v, devDependencies: undefined } : v.dev ? undefined : v]).filter(([, v]) => v !== undefined)) }, null, 4))(require('./npm-shrinkwrap.json'))" > dist/npm-shrinkwrap.json
+	node -p "((s) => JSON.stringify({ ...s, packages: Object.fromEntries(Object.entries(s.packages).map(([k, v]) => [k, k === '' ? { ...v, devDependencies: undefined } : v.dev ? undefined : v]).filter(([, v]) => v !== undefined)) }, null, 4))(require('./package-lock.json'))" > dist/package-lock.json
 	cp src/Dockerfile dist/Dockerfile
 	@touch dist/.done
 

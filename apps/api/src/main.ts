@@ -18,7 +18,7 @@ async function main(): Promise<0 | 1> {
 		},
 
 		keetaNet: {
-			fxAccount: KeetaNet.lib.Account.fromSeed(getEnv('KEETANET_SEED'), 0)
+			fxAccount: KeetaNet.lib.Account.fromSeed(getEnv('APP_SEED'), 0)
 		}
 	}
 

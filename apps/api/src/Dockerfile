@@ -22,11 +22,11 @@ FROM base AS runner
 WORKDIR /app
 
 RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 demo-kyc-provider
+RUN adduser --system --uid 1001 demo-fx-anchor
 
-COPY --from=builder --chown=demo-kyc-provider:nodejs /app/* /app/
+COPY --from=builder --chown=demo-fx-anchor:nodejs /app/* /app/
 
-USER demo-kyc-provider
+USER demo-fx-anchor
 EXPOSE 8080
 
 ENV PORT 8080

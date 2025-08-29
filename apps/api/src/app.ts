@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { validator } from "hono/validator";
 import { parse } from "valibot";
 import * as KeetaNetAnchor from "@keetanetwork/anchor";
-import { createExchangeSchema, getEstimateSchema, getExchangeStatusParamSchema, getQuoteSchema } from "./schema/anchor";
+import { createExchangeSchema as executeExchangeSchema, createEstimateSchema as getEstimateSchema, getExchangeStatusParamSchema, getQuoteSchema as createQuoteSchema } from "./schema/anchor";
 import type { ServerEnv } from "./server";
 
 const KeetaNet = KeetaNetAnchor.KeetaNet;
@@ -17,7 +17,7 @@ const KeetaNet = KeetaNetAnchor.KeetaNet;
 
 const app = new Hono<ServerEnv>()
 	/**
-	 * Create a new verification request
+	 * Get an estimate for a token swap
 	 */
 	.post("/anchor/getEstimate", validator("json", v => parse(getEstimateSchema, v)), async c => {
 		// Get the parsed request data.
@@ -42,9 +42,9 @@ const app = new Hono<ServerEnv>()
 	})
 
 	/**
-	 *
+	 * Create a quote for a token swap
 	 */
-	.post("/anchor/getQuote", validator("json", v => parse(getQuoteSchema, v)), async c => {
+	.post("/anchor/createQuote", validator("json", v => parse(createQuoteSchema, v)), async c => {
 		const userClient = KeetaNet.UserClient.fromNetwork('test', null)
 		return(c.json({
 			ok: true,
@@ -66,19 +66,19 @@ const app = new Hono<ServerEnv>()
 	})
 
 	/**
-	 *
+	 * Execute a token swap
 	 */
-	.post("/anchor/createExchange", validator("json", v => parse(createExchangeSchema, v)), async c => {
+	.post("/anchor/executeExchange", validator("json", v => parse(executeExchangeSchema, v)), async c => {
 		return(c.json({
 			ok: true,
-			blockhash: ""
+			exchangeId: ""
 		}));
 	})
 
 	/**
-	 *
+	 * Get the status of a token swap
 	 */
-	.get("/anchor/getExchangeStatus/:blockhash", validator("param", v => parse(getExchangeStatusParamSchema, v)), async c => {
+	.get("/anchor/getExchangeStatus/:exchangeId", validator("param", v => parse(getExchangeStatusParamSchema, v)), async c => {
 		return(c.json({
 			ok: true,
 			blockhash: ""

@@ -10,7 +10,7 @@ const currencies = CurrencyInfo.Currency.allCurrencyCodes;
 const currencySchema = v.pipe(v.string(), v.picklist(currencies));
 const requiredString = v.pipe(v.string("Required"), v.minLength(1, "Required"))
 
-export const getEstimateSchema = v.object({
+export const createEstimateSchema = v.object({
 	request: v.object({
 		from: currencySchema,
 		to: currencySchema,
@@ -19,11 +19,11 @@ export const getEstimateSchema = v.object({
 	})
 });
 
-export const getQuoteSchema = getEstimateSchema
+export const getQuoteSchema = createEstimateSchema
 
 export const createExchangeSchema = v.object({
 	request: v.object({
-		...getEstimateSchema.entries.request.entries,
+		...createEstimateSchema.entries.request.entries,
 		signature: v.object({
 			timestamp: requiredString,
 			nonce: requiredString,

@@ -159,7 +159,7 @@ export class KeetaNetDemoFXProvider extends pulumi.ComponentResource {
 				spec: {
 					containers: [{
 						image: apiImage.uri,
-						// ports: [{ containerPort: 8080 }],
+						ports: [{ containerPort: 8080 }],
 						envs: [{
 							name: "APP_SEED",
 							value: pulumi.output(this.config.app.seed).apply(function(seed) {

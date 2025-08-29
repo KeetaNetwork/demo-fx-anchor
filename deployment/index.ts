@@ -37,8 +37,5 @@ new KeetaNetDemoFXProvider(`demo-fx-provider-${deploymentName}`, {
 	app: {
 		seed: appSeed
 	},
-	ipAddress: ip.address,
-	sslCertificate: {
-		id: pulumi.output('demo-fx-provider-cf-20250807')
-	}
+	ipAddress: ip.address
 });

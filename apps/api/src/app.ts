@@ -138,7 +138,8 @@ const app = new Hono<ServerEnv>()
 		])
 
 		// Step 2: Calculate exchange rate
-		let rate = calculateExchangeRate(request.from, request.to)
+		logger?.debug(`Calculating exchange rate for ${fromTokenInfo.name} -> ${toTokenInfo.name}`)
+		let rate = calculateExchangeRate(fromTokenInfo.name, toTokenInfo.name)
 
 		// Step 3: Calculate converted amount based on affinity
 		let toAmount: string

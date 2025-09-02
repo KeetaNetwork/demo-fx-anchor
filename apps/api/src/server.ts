@@ -44,6 +44,8 @@ export function createApp(config: ApiServerConfig): Hono<ServerEnv> {
 	// Default values for prefix and port
 	const { prefix = "/api" } = config.server;
 
+	const logger = config.server.logger;
+
 	// KeetaNet Setup
 	const fxAccount = config.keetaNet.fxAccount;
 	const userClient = Anchor.KeetaNet.UserClient.fromNetwork('test', fxAccount);
@@ -56,7 +58,7 @@ export function createApp(config: ApiServerConfig): Hono<ServerEnv> {
 		)
 	);
 
-	const logger = config.server.logger;
+	logger?.info(`Using FX Anchor account: ${fxAccount.publicKeyString.get()}`);
 
 	// Create a new Hono app
 	const honoApp = new Hono<ServerEnv>();

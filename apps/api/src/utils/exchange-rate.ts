@@ -1,6 +1,8 @@
 // Exchange rate calculation function - can be mocked in tests
 export const calculateExchangeRate = (fromCurrency: string, toCurrency: string): number => {
 	const mockRates = {
+		'USD-MXN': 20.0,
+		'MXN-USD': 0.05,
 		'USD-EUR': 0.85,
 		'EUR-USD': 1.18,
 		'USD-BTC': 0.000023,

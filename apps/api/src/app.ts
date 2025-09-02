@@ -27,17 +27,21 @@ const app = new Hono<ServerEnv>()
 	.post("/anchor/getEstimate", validator("json", (i: GetEstimateSchema) => v.parse(getEstimateSchema, i)), async c => {
 		// Get the parsed request data.
 		const { request } = c.req.valid("json")
-		const fxClient = c.get("fxClient")
+		// const fxClient = c.get("fxClient")
 		const userClient = c.get("userClient")
 		const logger = c.get("log")
 
 		// Step 1: Look up the token information for both currencies
-		logger?.debug(`Looking up tokens for ${request.from} -> ${request.to}`)
+		// logger?.debug(`Looking up tokens for ${request.from} -> ${request.to}`)
 
-		const [fromToken, toToken] = await Promise.all([
-			fxClient.resolver.lookupToken(request.from),
-			fxClient.resolver.lookupToken(request.to)
-		])
+		// const [fromToken, toToken] = await Promise.all([
+		// 	// eslint-disable-next-line
+		// 	fxClient.resolver.lookupToken(request.from as any),
+		// 	// eslint-disable-next-line
+		// 	fxClient.resolver.lookupToken(request.to as any)
+		// ])
+		const fromToken = { token: request.from }
+		const toToken = { token: request.to }
 
 		if (!fromToken || !toToken) {
 			throw(new AppError(`Currency ${!fromToken ? request.from : request.to} not found`));
@@ -49,7 +53,8 @@ const app = new Hono<ServerEnv>()
 		])
 
 		// Step 2: Calculate exchange rate
-		let rate = calculateExchangeRate(request.from, request.to)
+		logger?.debug(`Calculating exchange rate for ${fromTokenInfo.name} -> ${toTokenInfo.name}`)
+		let rate = calculateExchangeRate(fromTokenInfo.name, toTokenInfo.name)
 
 		// Step 3: Calculate converted amount based on affinity
 		let toAmount: string
@@ -107,17 +112,21 @@ const app = new Hono<ServerEnv>()
 	.post("/anchor/createQuote", validator("json", (i: CreateQuoteSchema) => v.parse(createQuoteSchema, i)), async c => {
 		// Get the parsed request data.
 		const { request } = c.req.valid("json")
-		const fxClient = c.get("fxClient")
+		// const fxClient = c.get("fxClient")
 		const userClient = c.get("userClient")
 		const logger = c.get("log")
 
 		// Step 1: Look up the token information for both currencies
 		logger?.debug(`Creating quote for ${request.from} -> ${request.to}`)
 
-		const [fromToken, toToken] = await Promise.all([
-			fxClient.resolver.lookupToken(request.from),
-			fxClient.resolver.lookupToken(request.to)
-		])
+		// const [fromToken, toToken] = await Promise.all([
+		// 	// eslint-disable-next-line
+		// 	fxClient.resolver.lookupToken(request.from as any),
+		// 	// eslint-disable-next-line
+		// 	fxClient.resolver.lookupToken(request.to as any)
+		// ])
+		const fromToken = { token: request.from }
+		const toToken = { token: request.to }
 
 		if (!fromToken || !toToken) {
 			throw(new AppError(`Currency ${!fromToken ? request.from : request.to} not found`));

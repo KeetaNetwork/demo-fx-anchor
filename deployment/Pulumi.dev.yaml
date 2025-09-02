@@ -2,5 +2,6 @@ secretsprovider: gcpkms://projects/mimetic-algebra-344104/locations/nam8/keyRing
 encryptedkey: CiQASqjc0nnns3LgRitFn91/L2ocWJZj1ugHykduzclFkgXKycYSSABRxxarHO4ndclSCjlp5tmYrJFB5onv9b9rVT93In9BVq7/AhfhW+3s7T+sxX7xvSJEIwlY43JpUDOK092yc1J4vhyKzmjjGQ==
 config:
   gcp:project: mimetic-algebra-344104
+  keetanet-demo-fx-anchor-deploy:DEMO_ANCHOR_RESOLVER_PUBLIC_KEY: keeta_aab6jecanc6sojrqhmujtkmwskr3lti27r4xee56vszm3sumklisyniatpkquly
   keetanet-demo-fx-anchor-deploy:DEMO_ANCHOR_SEED:
     secure: v1:ZOpCx3NIpRnfxu9c:Rqsd1BksEtNLo4ecsN7w/Y1NCjvTlumPlGjdJkGEBEtF4Yywaee9qIlgU23/fV5B1USPWzW+UKPq+hQ/mcr+xGZhT/bYvaG0w6EeQjVJSKQ=

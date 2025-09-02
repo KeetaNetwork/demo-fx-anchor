@@ -10,6 +10,8 @@ async function main(): Promise<0 | 1> {
 	// eslint-disable-next-line @typescript-eslint/consistent-type-assertions
 	const logger = new Logger(getEnv('APP_LOG_LEVEL', 'WARN') as LogLevel);
 
+	const resolver = getEnv('APP_RESOLVER_ACCOUNT', '').trim();
+
 	const config: ApiServerConfig = {
 		server: {
 			prefix: getEnv('APP_PREFIX', '/api'),
@@ -18,7 +20,8 @@ async function main(): Promise<0 | 1> {
 		},
 
 		keetaNet: {
-			fxAccount: KeetaNet.lib.Account.fromSeed(getEnv('APP_SEED'), 0)
+			fxAccount: KeetaNet.lib.Account.fromSeed(getEnv('APP_SEED'), 0),
+			resolverAccount: resolver.length > 0 ? KeetaNet.lib.Account.fromPublicKeyString(resolver) : undefined
 		}
 	}
 

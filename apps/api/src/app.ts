@@ -88,17 +88,16 @@ const app = new Hono<ServerEnv>()
 		// Step 6: Return the result with original request echoed back
 		return(c.json({
 			ok: true,
-			request: {
-				from: request.from,
-				to: request.to,
-				amount: request.amount.toString(),
-				affinity: request.affinity
-			},
 			estimate: {
-				rate: rate.toString(),
-				convertedAmount
-			},
-			expectedCost
+				request: {
+					from: request.from,
+					to: request.to,
+					amount: request.amount.toString(),
+					affinity: request.affinity
+				},
+				convertedAmount,
+				expectedCost
+			}
 		}));
 	})
 
@@ -173,25 +172,24 @@ const app = new Hono<ServerEnv>()
 		// Step 7: Return the quote with original request echoed back
 		return(c.json({
 			ok: true,
-			request: {
-				from: request.from,
-				to: request.to,
-				amount: request.amount.toString(),
-				affinity: request.affinity
-			},
 			quote: {
+				request: {
+					from: request.from,
+					to: request.to,
+					amount: request.amount.toString(),
+					affinity: request.affinity
+				},
 				account: userClient.account.publicKeyString.get(),
-				rate: rate.toString(),
 				convertedAmount,
 				signed: {
 					nonce,
 					timestamp,
 					signature
+				},
+				cost: {
+					amount: new Numeric(actualCostAmount).toDecimalString(9),
+					token: userClient.baseToken.publicKeyString.get()
 				}
-			},
-			cost: {
-				amount: new Numeric(actualCostAmount).toDecimalString(9),
-				token: userClient.baseToken.publicKeyString.get()
 			}
 		}));
 	})
@@ -212,7 +210,8 @@ const app = new Hono<ServerEnv>()
 		const blockBuffer = urlSafeBase64ToBinary(request.block).buffer
 
 		// Create a new block instance
-		const block = new KeetaNet.lib.Block(blockBuffer)
+		// eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+		const block = new KeetaNet.lib.Block(blockBuffer as ArrayBuffer)
 
 		// Get the send and receive operations
 		const sendOperation = block.operations.find(({ type }) => KeetaNet.lib.Block.OperationType.SEND === type)

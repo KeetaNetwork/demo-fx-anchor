@@ -63,20 +63,18 @@ describe('API Tests', async () => {
 
 			expect(response.status).toBe(200)
 			expect(data.ok).toBeTruthy()
-			expect(JSON.stringify(data.request)).toBe(JSON.stringify(request))
+			expect(JSON.stringify(data.estimate.request)).toBe(JSON.stringify(request))
 
 			// Verify the mocked exchange rate is used
 			expect(mockedCalculateExchangeRate).toHaveBeenCalledWith('USD', 'EUR')
-			expect(data.estimate.rate).toBe('0.85')
 			expect(data.estimate.convertedAmount).toBe('85.00') // 100 * 0.85
 
-			expect(data.expectedCost.min).toBeDefined()
-			expect(data.expectedCost.max).toBeDefined()
-			expect(data.expectedCost.token).toBeDefined()
+			expect(data.estimate.expectedCost.min).toBeDefined()
+			expect(data.estimate.expectedCost.max).toBeDefined()
+			expect(data.estimate.expectedCost.token).toBeDefined()
 
 			const dataTo = await client.anchor.getEstimate.$post({ json: { request: { ...request, affinity: 'to' }}}).then(r => r.json())
 
-			expect(dataTo.estimate.rate).toBe('0.85')
 			expect(dataTo.estimate.convertedAmount).toBe('117.65') // 100 / 0.85
 		})
 
@@ -190,11 +188,10 @@ describe('API Tests', async () => {
 
 			expect(response.status).toBe(200)
 			expect(data.ok).toBeTruthy()
-			expect(JSON.stringify(data.request)).toBe(JSON.stringify(request))
+			expect(JSON.stringify(data.quote.request)).toBe(JSON.stringify(request))
 
 			// Verify the mocked exchange rate is used
 			expect(mockedCalculateExchangeRate).toHaveBeenCalledWith('USD', 'EUR')
-			expect(data.quote.rate).toBe('0.85')
 			expect(data.quote.convertedAmount).toBe('85.00') // 100 * 0.85
 
 			// Verify quote structure
@@ -204,8 +201,8 @@ describe('API Tests', async () => {
 			expect(data.quote.signed.signature).toBe('') // Empty for demo
 
 			// Verify cost is calculated
-			expect(data.cost.amount).toBeDefined()
-			expect(data.cost.token).toBeDefined()
+			expect(data.quote.cost.amount).toBeDefined()
+			expect(data.quote.cost.token).toBeDefined()
 		})
 
 		it('should use mocked exchange rate for different currency pairs in quote', async () => {
@@ -227,7 +224,6 @@ describe('API Tests', async () => {
 
 			// Verify the mocked exchange rate is used
 			expect(mockedCalculateExchangeRate).toHaveBeenCalledWith('USD', 'EUR')
-			expect(data.quote.rate).toBe('1.18')
 			expect(data.quote.convertedAmount).toBe('118.00') // 100 * 1.18
 		})
 
@@ -347,23 +343,24 @@ describe('API Tests', async () => {
 		await lpUserClient.send(userAccount, ADD_USER_USD, tokens.USD, undefined, { account: tokens.USD })
 
 		it('should execute exchange with valid quote', async () => {
-			// Request
-			const request = {
-				from: 'USD',
-				to: 'EUR',
-				amount: '100',
-				affinity: 'from'
-			}
-
 			// Quote
 			const quote = {
+				request: {
+					from: 'USD',
+					to: 'EUR',
+					amount: '100',
+					affinity: 'from'
+				},
 				account: fxAccount.publicKeyString.get(),
-				rate: '1.18',
 				convertedAmount: '118.00',
 				signed: {
 					nonce: crypto.randomUUID(),
 					timestamp: (new Date()).toISOString(),
 					signature: ""
+				},
+				cost: {
+					token: fxUserClient.baseToken.publicKeyString.get(),
+					amount: new Numeric(1).toDecimalString(9)
 				}
 			}
 
@@ -394,7 +391,7 @@ describe('API Tests', async () => {
 			 * Create SWAP Block
 			 */
 			// Calculate amount
-			const sendAmount = Numeric.fromDecimalString(request.amount, sendTokenInfo.decimalPlaces);
+			const sendAmount = Numeric.fromDecimalString(quote.request.amount, sendTokenInfo.decimalPlaces);
 			const receiveAmount = Numeric.fromDecimalString(quote.convertedAmount, receiveTokenInfo.decimalPlaces);
 
 			// Create the transaction

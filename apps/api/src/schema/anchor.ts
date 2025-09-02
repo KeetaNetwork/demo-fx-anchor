@@ -24,9 +24,13 @@ export const executeExchangeSchema = v.object({
 	request: v.object({
 		block: requiredString,
 		quote: v.object({
+			request: getEstimateSchema.entries.request,
 			account: requiredString,
-			rate: requiredString,
 			convertedAmount: requiredString,
+			cost: v.object({
+				amount: requiredString,
+				token: requiredString
+			}),
 			signed: v.object({
 				timestamp: requiredString,
 				nonce: requiredString,

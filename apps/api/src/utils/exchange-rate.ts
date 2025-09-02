@@ -6,7 +6,13 @@ export const calculateExchangeRate = (fromCurrency: string, toCurrency: string):
 		'USD-EUR': 0.85,
 		'EUR-USD': 1.18,
 		'USD-BTC': 0.000023,
-		'BTC-USD': 43000
+		'BTC-USD': 43000,
+		'KTA-USD': 1.54,
+		'USD-KTA': 0.65,
+		'KTA-MXN': 30.8,
+		'MXN-KTA': 0.0325,
+		'KTA-BTC': 0.000015,
+		'BTC-KTA': 65000
 	}
 
 	// eslint-disable-next-line @typescript-eslint/consistent-type-assertions

@@ -27,6 +27,13 @@ export function decodeTokenMetadata(metadata: string): Metadata {
 }
 
 export async function getTokenInfo(userClient: InstanceType<typeof Anchor.KeetaNet.UserClient>, account: InstanceType<typeof Anchor.KeetaNet.lib.Account> | string) {
+	if (userClient.baseToken.comparePublicKey(account)) {
+		return({
+			name: 'KTA',
+			description: 'Keeta',
+			decimalPlaces: 9
+		})
+	}
 	const { info } = await userClient.client.getAccountInfo(account)
 
 	return({

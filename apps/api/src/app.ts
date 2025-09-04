@@ -24,7 +24,7 @@ const app = new Hono<ServerEnv>()
 	/**
 	 * Get an estimate for a token swap
 	 */
-	.post("/anchor/getEstimate", validator("json", (i: GetEstimateSchema) => v.parse(getEstimateSchema, i)), async c => {
+	.post("/getEstimate", validator("json", (i: GetEstimateSchema) => v.parse(getEstimateSchema, i)), async c => {
 		// Get the parsed request data.
 		const { request } = c.req.valid("json")
 		// const fxClient = c.get("fxClient")
@@ -109,7 +109,7 @@ const app = new Hono<ServerEnv>()
 	/**
 	 * Create a quote for a token swap
 	 */
-	.post("/anchor/createQuote", validator("json", (i: CreateQuoteSchema) => v.parse(createQuoteSchema, i)), async c => {
+	.post("/getQuote", validator("json", (i: CreateQuoteSchema) => v.parse(createQuoteSchema, i)), async c => {
 		// Get the parsed request data.
 		const { request } = c.req.valid("json")
 		// const fxClient = c.get("fxClient")
@@ -207,7 +207,7 @@ const app = new Hono<ServerEnv>()
 	/**
 	 * Execute a token swap
 	 */
-	.post("/anchor/executeExchange", validator("json", (i: ExecuteExchangeSchema) => v.parse(executeExchangeSchema, i)), async c => {
+	.post("/createExchange", validator("json", (i: ExecuteExchangeSchema) => v.parse(executeExchangeSchema, i)), async c => {
 		// Get the parsed request data.
 		const { request } = c.req.valid("json")
 		const userClient = c.get("userClient")
@@ -264,7 +264,7 @@ const app = new Hono<ServerEnv>()
 	/**
 	 * Get the status of a token swap
 	 */
-	.get("/anchor/getExchangeStatus/:exchangeID", validator("param", (i: GetExchangeStatusParamSchema) => v.parse(getExchangeStatusParamSchema, i)), async c => {
+	.get("/getExchangeStatus/:exchangeID", validator("param", (i: GetExchangeStatusParamSchema) => v.parse(getExchangeStatusParamSchema, i)), async c => {
 		return(c.json({
 			ok: true,
 			exchangeID: c.req.valid("param").exchangeID

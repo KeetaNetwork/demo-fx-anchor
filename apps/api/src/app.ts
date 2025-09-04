@@ -82,11 +82,13 @@ const app = new Hono<ServerEnv>()
 		}
 
 		// Step 5: Calculate expected cost (network fees, processing fees)
-		const baseFee = userClient.baseToken.comparePublicKey(fromToken.token) ? "0.001" : "0.002"
+		// const baseFee = userClient.baseToken.comparePublicKey(fromToken.token) ? "0.001" : "0.002"
 
 		const expectedCost = {
-			min: baseFee,
-			max: request.amount.mul(0.005).toString(), // Max 0.5% of transaction
+			min: '0',
+			max: '0', // Max 0.5% of transaction
+			// min: baseFee,
+			// max: request.amount.mul(0.005).toString(), // Max 0.5% of transaction
 			token: userClient.baseToken.publicKeyString.get()
 		}
 
@@ -167,9 +169,9 @@ const app = new Hono<ServerEnv>()
 		}
 
 		// Step 5: Calculate actual cost (network fees, processing fees)
-		const baseFee = userClient.baseToken.comparePublicKey(fromToken.token) ? "0.001" : "0.002"
-		const processingFee = request.amount.mul(0.005).toString() // 0.5% of transaction
-		const actualCostAmount = Numeric.fromDecimalString(baseFee, 9).valueOf() + Numeric.fromDecimalString(processingFee, 9).valueOf()
+		// const baseFee = userClient.baseToken.comparePublicKey(fromToken.token) ? "0.001" : "0.002"
+		// const processingFee = request.amount.mul(0.005).toString() // 0.5% of transaction
+		// const actualCostAmount = Numeric.fromDecimalString(baseFee, 9).valueOf() + Numeric.fromDecimalString(processingFee, 9).valueOf()
 
 		// Step 6: Generate quote signature data
 		const timestamp = (new Date()).toISOString()
@@ -197,7 +199,8 @@ const app = new Hono<ServerEnv>()
 					signature
 				},
 				cost: {
-					amount: new Numeric(actualCostAmount).toDecimalString(9),
+					// amount: new Numeric(actualCostAmount).toDecimalString(9),
+					amount: '0',
 					token: userClient.baseToken.publicKeyString.get()
 				}
 			}

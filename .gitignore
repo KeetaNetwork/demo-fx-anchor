@@ -22,3 +22,4 @@ yarn-error.log*
 
 # vs code
 .vscode
+/keetanetwork-demo-fx-anchor-*.tgz

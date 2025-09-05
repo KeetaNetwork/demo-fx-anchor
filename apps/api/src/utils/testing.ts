@@ -1,6 +1,6 @@
 import { KeetaNet } from "@keetanetwork/anchor";
 import * as Anchor from "@keetanetwork/anchor";
-import type { Logger } from "./logger";
+import type { Logger } from '@keetanetwork/anchor/lib/log';
 
 /**
  * Builds the token blocks for a given user client builder.

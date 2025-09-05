@@ -2,7 +2,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { testClient } from 'hono/testing'
 import { type ApiServerConfig, createApp } from './server'
 import type { AppSchema } from './app'
-import { Logger } from './utils/logger'
+import { Log as Logger } from '@keetanetwork/anchor/lib/log';
+import { LogTargetConsole } from '@keetanetwork/anchor/lib/log/target_console';
 import { setup } from './utils/testing'
 import { calculateExchangeRate } from './utils/exchange-rate'
 import { KeetaNet } from '@keetanetwork/anchor'
@@ -19,7 +20,10 @@ const mockedCalculateExchangeRate = vi.mocked(calculateExchangeRate)
 
 describe('API Tests', async () => {
 	// Setup logger
-	const logger = new Logger('INFO');
+	const logger = new Logger();
+	logger.registerTarget(new LogTargetConsole({
+		logLevel: 'INFO'
+	}));
 
 	// Setup test environment
 	const { fxAccount, fxUserClient, lpUserClient, resolverAccount, tokens } = await setup(logger);

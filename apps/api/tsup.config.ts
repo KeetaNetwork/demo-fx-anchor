@@ -21,5 +21,6 @@ export default defineConfig({
 	noExternal: [
 		/@keetanetwork\/anchor/,
 		/@keetanetwork\/keetanet-client/,
+		/@keetanetwork\/web-ui-utils/,
 	]
 })

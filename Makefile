@@ -79,7 +79,7 @@ dist: dist/.done
 # 
 do-npm-pack: dist
 	cd dist && npm pack
-	mv dist/keetanetwork-demo-kyc-*.tgz .
+	mv dist/keetanetwork-demo-fx-*.tgz .
 
 # 
 # Cleaning targets

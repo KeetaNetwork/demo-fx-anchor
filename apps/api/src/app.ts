@@ -5,20 +5,11 @@ import type { ServerEnv } from "./server";
 import type { CreateQuoteSchema, ExecuteExchangeSchema, GetEstimateSchema, GetExchangeStatusParamSchema } from "./schema/anchor";
 import { getEstimateSchema, createQuoteSchema, executeExchangeSchema, getExchangeStatusParamSchema } from "./schema/anchor";
 import { AppError } from "./error";
-import { getTokenInfo } from "./utils/network";
-import { Numeric } from "./utils/numeric";
+import { clearBalanceCache, getTokenBalance, getTokenInfo } from "./utils/network";
 import { calculateExchangeRate } from "./utils/exchange-rate";
 import { KeetaNet } from "@keetanetwork/anchor";
 import { urlSafeBase64ToBinary } from "./utils/base64";
-
-// Check if the request is signed and valid.
-// if (!(await verifySignedData(data.request))) {
-// 	return(c.json({
-// 		ok: false,
-// 		error: "Invalid signed data"
-// 	}, 400));
-// }
-
+import { Numeric } from "@keetanetwork/web-ui-utils/helpers/Numeric";
 
 const app = new Hono<ServerEnv>()
 	/**
@@ -27,19 +18,10 @@ const app = new Hono<ServerEnv>()
 	.post("/getEstimate", validator("json", (i: GetEstimateSchema) => v.parse(getEstimateSchema, i)), async c => {
 		// Get the parsed request data.
 		const { request } = c.req.valid("json")
-		// const fxClient = c.get("fxClient")
 		const userClient = c.get("userClient")
 		const logger = c.get("log")
 
 		// Step 1: Look up the token information for both currencies
-		// logger?.debug(`Looking up tokens for ${request.from} -> ${request.to}`)
-
-		// const [fromToken, toToken] = await Promise.all([
-		// 	// eslint-disable-next-line
-		// 	fxClient.resolver.lookupToken(request.from as any),
-		// 	// eslint-disable-next-line
-		// 	fxClient.resolver.lookupToken(request.to as any)
-		// ])
 		const fromToken = { token: request.from }
 		const toToken = { token: request.to }
 
@@ -71,10 +53,10 @@ const app = new Hono<ServerEnv>()
 		logger?.debug(`Calculated rate: ${rate}, converted amount: ${convertedAmount}, to amount: ${toAmount}`)
 
 		// Step 4: Check balance
-		const balance = new Numeric(await userClient.balance(toToken.token))
+		const balance = new Numeric(await getTokenBalance(userClient, toToken.token))
 		logger?.debug(`Balance for ${request.to}: ${balance.toDecimalString(toTokenInfo.decimalPlaces)}`)
 
-		const requestedAmount = Numeric.fromDecimalString(toAmount, toTokenInfo.decimalPlaces)
+		const requestedAmount = Numeric.fromDecimalString(toAmount, toTokenInfo.decimalPlaces, true)
 		logger?.debug(`Requested amount: ${requestedAmount.toDecimalString(toTokenInfo.decimalPlaces)}`)
 
 		if (balance.valueOf() < requestedAmount.valueOf()) {
@@ -82,11 +64,11 @@ const app = new Hono<ServerEnv>()
 		}
 
 		// Step 5: Calculate expected cost (network fees, processing fees)
-		const baseFee = userClient.baseToken.comparePublicKey(fromToken.token) ? "0.001" : "0.002"
+		const baseFee = userClient.baseToken.comparePublicKey(fromToken.token) ? "0.00001" : "0.00002"
 
 		const expectedCost = {
 			min: baseFee,
-			max: request.amount.mul(0.005).toString(), // Max 0.5% of transaction
+			max: Numeric.fromDecimalString(request.amount.mul(0.0005).toString(), 9, true).toDecimalString(9, true, true), // Max 0.05% of transaction
 			token: userClient.baseToken.publicKeyString.get()
 		}
 
@@ -156,10 +138,10 @@ const app = new Hono<ServerEnv>()
 		logger?.debug(`Quote calculated - rate: ${rate}, converted amount: ${convertedAmount}, to amount: ${toAmount}`)
 
 		// Step 4: Check balance
-		const balance = new Numeric(await userClient.balance(toToken.token))
+		const balance = new Numeric(await getTokenBalance(userClient, toToken.token, true))
 		logger?.debug(`Balance for ${request.to}: ${balance.toDecimalString(toTokenInfo.decimalPlaces)}`)
 
-		const requestedAmount = Numeric.fromDecimalString(toAmount, toTokenInfo.decimalPlaces)
+		const requestedAmount = Numeric.fromDecimalString(toAmount, toTokenInfo.decimalPlaces, true)
 		logger?.debug(`Requested amount: ${requestedAmount.toDecimalString(toTokenInfo.decimalPlaces)}`)
 
 		if (balance.valueOf() < requestedAmount.valueOf()) {
@@ -167,9 +149,10 @@ const app = new Hono<ServerEnv>()
 		}
 
 		// Step 5: Calculate actual cost (network fees, processing fees)
-		const baseFee = userClient.baseToken.comparePublicKey(fromToken.token) ? "0.001" : "0.002"
-		const processingFee = request.amount.mul(0.005).toString() // 0.5% of transaction
-		const actualCostAmount = Numeric.fromDecimalString(baseFee, 9).valueOf() + Numeric.fromDecimalString(processingFee, 9).valueOf()
+		const baseFee = userClient.baseToken.comparePublicKey(fromToken.token) ? "0.00001" : "0.00002"
+		const randomProcessingFee = (Math.random() * (0.00005 - 0.00001) + 0.00001).toFixed(6) // Random between 0.001% and 0.005% of transaction
+		const processingFee = request.amount.mul(randomProcessingFee).toString() // 0.005% of transaction
+		const actualCostAmount = Numeric.fromDecimalString(baseFee, 9, true).valueOf() + Numeric.fromDecimalString(processingFee, 9, true).valueOf()
 
 		// Step 6: Generate quote signature data
 		const timestamp = (new Date()).toISOString()
@@ -197,7 +180,7 @@ const app = new Hono<ServerEnv>()
 					signature
 				},
 				cost: {
-					amount: new Numeric(actualCostAmount).toDecimalString(9),
+					amount: new Numeric(actualCostAmount).toDecimalString(9, true, true),
 					token: userClient.baseToken.publicKeyString.get()
 				}
 			}
@@ -254,6 +237,9 @@ const app = new Hono<ServerEnv>()
 		 * the swap block with the send and receive operations.
 		 */
 		await userClient.client.transmit([computedSendBlock, block])
+
+		// Clear balance cache for the token being swapped to
+		clearBalanceCache(request.quote.request.to);
 
 		return(c.json({
 			ok: true,

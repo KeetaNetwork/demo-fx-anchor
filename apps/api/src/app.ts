@@ -236,7 +236,9 @@ const app = new Hono<ServerEnv>()
 		 * first (from the account that is accepting the swap) and then
 		 * the swap block with the send and receive operations.
 		 */
-		await userClient.client.transmit([computedSendBlock, block])
+		await userClient.client.transmit([computedSendBlock, block], {
+			generateFeeBlock: userClient.config.generateFeeBlock
+		})
 
 		// Clear balance cache for the token being swapped to
 		clearBalanceCache(request.quote.request.to);

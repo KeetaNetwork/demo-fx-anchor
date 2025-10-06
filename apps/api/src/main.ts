@@ -6,8 +6,8 @@ import LogTargetConsole from "@keetanetwork/anchor/lib/log/target_console";
 import { Log as Logger } from '@keetanetwork/anchor/lib/log';
 import { getTokenInfo } from "./utils/network";
 import { getExchangeRate } from "./utils/rates";
-import Decimal from "decimal.js";
 import { Numeric } from "@keetanetwork/web-ui-utils/helpers/Numeric";
+import Decimal from "decimal.js";
 
 async function main(): Promise<0 | 1> {
 	/**
@@ -62,13 +62,11 @@ async function main(): Promise<0 | 1> {
 				const requestAmount = new Decimal(request.amount)
 				let convertedAmount: string
 				if (request.affinity === 'from') {
-					convertedAmount = requestAmount.mul(rate).toFixed(0)
-					convertedAmount = new Numeric(convertedAmount).toDecimalString(fromTokenInfo.decimalPlaces)
-					convertedAmount = Numeric.fromDecimalString(convertedAmount, toTokenInfo.decimalPlaces, true).valueOf().toString()
+					convertedAmount = new Numeric(requestAmount.mul(rate).toFixed(0)).toDecimalString(fromTokenInfo.decimalPlaces)
+					convertedAmount = Numeric.fromDecimalString(convertedAmount, toTokenInfo.decimalPlaces).toString()
 				} else {
-					convertedAmount = requestAmount.div(rate).toFixed(0)
-					convertedAmount = new Numeric(convertedAmount).toDecimalString(toTokenInfo.decimalPlaces)
-					convertedAmount = Numeric.fromDecimalString(convertedAmount, fromTokenInfo.decimalPlaces, true).valueOf().toString()
+					convertedAmount = new Numeric(requestAmount.div(rate).toFixed(0)).toDecimalString(toTokenInfo.decimalPlaces)
+					convertedAmount = Numeric.fromDecimalString(convertedAmount, fromTokenInfo.decimalPlaces).toString()
 				}
 
 				/**

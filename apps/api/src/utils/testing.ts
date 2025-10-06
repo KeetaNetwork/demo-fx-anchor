@@ -86,10 +86,10 @@ export async function setup(logger?: Logger) {
 							to: [currencyEUR.publicKeyString.get()]
 						}],
 						operations: {
-							getEstimate: "/anchor/getEstimate",
-							getQuote: "/anchor/createQuote",
-							createExchange: "/anchor/executeExchange",
-							getExchangeStatus: "/anchor/getExchangeStatus/:blockhash"
+							getEstimate: "/api/getEstimate",
+							getQuote: "/api/getQuote",
+							createExchange: "/api/createExchange",
+							getExchangeStatus: "/api/getExchangeStatus/:blockhash"
 						}
 					}
 				}

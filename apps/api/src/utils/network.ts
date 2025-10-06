@@ -1,34 +1,8 @@
 import type * as Anchor from "@keetanetwork/anchor";
-
-interface Metadata {
-	decimalPlaces: number
-}
-
-export function decodeTokenMetadata(metadata: string): Metadata {
-	const retval: Metadata = {
-		decimalPlaces: 0
-	}
-
-	try {
-		const parsed: unknown = JSON.parse(atob(metadata))
-		if (
-			parsed &&
-			typeof parsed === "object" &&
-			"decimalPlaces" in parsed &&
-			(typeof parsed.decimalPlaces === "string" || typeof parsed.decimalPlaces === "number")
-		) {
-			retval.decimalPlaces = Number(parsed.decimalPlaces)
-		}
-	} catch {
-		/* */
-	}
-
-	return(retval);
-}
+import { decodeTokenMetadata } from "@keetanetwork/web-ui-utils/helpers/keetanet-tokens";
 
 interface TokenInfo {
-	name: string
-	description: string
+	currencyCode: string
 	decimalPlaces: number
 }
 const tokensMemCache = new Map<string, TokenInfo>();
@@ -39,20 +13,11 @@ export async function getTokenInfo(userClient: InstanceType<typeof Anchor.KeetaN
 		return(cached)
 	}
 
-	let tokenInfo: TokenInfo;
-	if (userClient.baseToken.comparePublicKey(account)) {
-		tokenInfo = {
-			name: 'KTA',
-			description: 'Keeta',
-			decimalPlaces: 9
-		}
-	} else {
-		const { info } = await userClient.client.getAccountInfo(account)
-		tokenInfo = {
-			...info,
-			...decodeTokenMetadata(info.metadata)
-		}
-	}
+	const { info } = await userClient.client.getAccountInfo(account)
+	const tokenInfo = {
+		currencyCode: info.name.length > 0 ? info.name : info.description.toUpperCase(),
+		...decodeTokenMetadata(info.metadata)
+	} satisfies TokenInfo
 
 	tokensMemCache.set(typeof account === "string" ? account : account.publicKeyString.get(), tokenInfo)
 	return(tokenInfo)

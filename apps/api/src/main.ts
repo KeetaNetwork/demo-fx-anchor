@@ -1,65 +1,105 @@
-import { KeetaNet } from "@keetanetwork/anchor";
-import type { ApiServerConfig } from "./server";
-import { createApiServer } from "./server";
+import * as Anchor from "@keetanetwork/anchor";
+import { KeetaNetFXAnchorHTTPServer } from "@keetanetwork/anchor/services/fx/server";
 import { getEnv } from "./utils/config";
-import type { LogTargetLevel } from '@keetanetwork/anchor/lib/log/common';
+import type { LogTargetLevel } from "@keetanetwork/anchor/lib/log/common";
+import LogTargetConsole from "@keetanetwork/anchor/lib/log/target_console";
 import { Log as Logger } from '@keetanetwork/anchor/lib/log';
-import { LogTargetConsole } from '@keetanetwork/anchor/lib/log/target_console';
-
-const AsyncDisposableStack = KeetaNet.lib.Utils.Helper.AsyncDisposableStack;
+import { getTokenInfo } from "./utils/network";
+import { getExchangeRate } from "./utils/rates";
+import Decimal from "decimal.js";
+import { Numeric } from "@keetanetwork/web-ui-utils/helpers/Numeric";
 
 async function main(): Promise<0 | 1> {
+	/**
+	 * Configure logging
+	 */
 	// eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-	const targetLevel = getEnv('APP_LOG_LEVEL', 'WARN') as LogTargetLevel;
+	const logLevel = getEnv('APP_LOG_LEVEL', 'WARN') as LogTargetLevel;
 	const logger = new Logger();
-	logger.registerTarget(new LogTargetConsole({
-		logLevel: targetLevel
-	}));
+	logger.registerTarget(new LogTargetConsole({ logLevel }));
 	logger.startAutoSync();
-	const cleanup = new AsyncDisposableStack();
-	cleanup.defer(function() {
-		logger.stopAutoSync();
-	});
 
-	const resolver = getEnv('APP_RESOLVER_ACCOUNT', '').trim();
+	/**
+	 * Set up KeetaNet client
+	 */
+	const account = Anchor.KeetaNet.lib.Account.fromSeed(getEnv('APP_SEED'), 0);
+	const userClient = Anchor.KeetaNet.UserClient.fromNetwork('test', account);
 
-	const config: ApiServerConfig = {
-		server: {
-			prefix: getEnv('APP_PREFIX', '/api'),
-			port: parseInt(getEnv('PORT', '8080'), 10),
-			logger
-		},
+	/**
+	 * Set up the HTTP server
+	 */
+	const port = parseInt(getEnv('PORT', '8080'), 10)
 
-		keetaNet: {
-			fxAccount: KeetaNet.lib.Account.fromSeed(getEnv('APP_SEED'), 0),
-			resolverAccount: resolver.length > 0 ? KeetaNet.lib.Account.fromPublicKeyString(resolver) : undefined
-		}
-	}
+	/**
+	 * Set up the FX Anchor HTTP server
+	 */
+	await using server = new KeetaNetFXAnchorHTTPServer({
+		account,
+		client: userClient,
+		quoteSigner: account,
+		port,
+		logger,
+		fx: {
+			getConversionRateAndFee: async function(request) {
+				/**
+				 * Look up the token information for both currencies
+				 */
+				const [fromTokenInfo, toTokenInfo] = await Promise.all([
+					getTokenInfo(userClient, request.from),
+					getTokenInfo(userClient, request.to)
+				])
 
-	let server: Awaited<ReturnType<typeof createApiServer>>['server'];
-	try {
-		let info;
-		({ server, info } = await createApiServer(config));
+				/**
+				 * Calculate exchange rate
+				 */
+				logger?.debug(`Calculating exchange rate for ${fromTokenInfo.currencyCode} -> ${toTokenInfo.currencyCode}`);
+				const { rate } = await getExchangeRate(fromTokenInfo.currencyCode, toTokenInfo.currencyCode);
+				logger?.debug(`Base rate: ${rate}`)
 
-		const address = info.address === "::" ? "localhost" : info.address;
-		logger?.log(`Server is running at http://${address}:${info.port}`);
+				/**
+				 * Calculate converted amount based on affinity
+				 */
+				const requestAmount = new Decimal(request.amount)
+				let convertedAmount: string
+				if (request.affinity === 'from') {
+					convertedAmount = requestAmount.mul(rate).toFixed(0)
+					convertedAmount = new Numeric(convertedAmount).toDecimalString(fromTokenInfo.decimalPlaces)
+					convertedAmount = Numeric.fromDecimalString(convertedAmount, toTokenInfo.decimalPlaces, true).valueOf().toString()
+				} else {
+					convertedAmount = requestAmount.div(rate).toFixed(0)
+					convertedAmount = new Numeric(convertedAmount).toDecimalString(toTokenInfo.decimalPlaces)
+					convertedAmount = Numeric.fromDecimalString(convertedAmount, fromTokenInfo.decimalPlaces, true).valueOf().toString()
+				}
 
-		// graceful shutdown
-		process.on('beforeExit', function() {
-			if (server.listening) {
-				server.close()
+				/**
+				 *  Calculate cost (network fees, processing fees)
+				 */
+				// For demo purposes, we set cost to 0
+				const cost = {
+					amount: '0',
+					token: userClient.baseToken.publicKeyString.get()
+				}
+
+				// Return the converted amount and cost
+				return({
+					account: account.publicKeyString.get(),
+					convertedAmount,
+					cost
+				});
 			}
-		});
-	} catch (error: unknown) {
-		logger?.error("Error starting server:", error);
-	}
+		}
+	})
 
-	await new Promise<void>(function(resolve) {
-		server.on('close', function() {
-			resolve();
-		});
-	});
+	// Start the server
+	await server.start();
 
+	// Wait for the server to stop
+	await server.wait();
+
+	// Cleanup
+	logger.stopAutoSync();
+
+	// Exit
 	return(0);
 }
 

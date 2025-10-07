@@ -49,7 +49,7 @@ async function getSupportedCurrencies(): Promise<string[]> {
 }
 
 // Get the exchange rates to all available currencies from the anchor currency
-async function getRates(anchorCurrencyCode: string): Promise<ExchangeRate[]> {
+export async function getRates(anchorCurrencyCode: string): Promise<ExchangeRate[]> {
 	if (anchorCurrencyCode === 'USD') {
 		return(USDRates);
 	}

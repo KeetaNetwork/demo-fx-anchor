@@ -15,8 +15,7 @@ help:
 	@echo "  distclean     - Removes all build artifacts and dependencies"
 
 test:
-	@echo 'not implemented'
-	@exit 1
+	$(MAKE) -C apps/api test
 
 do-dev-server: node_modules
 	./utils/start-dev-server.ts

@@ -9,7 +9,8 @@
 	"scripts": {
 		"tsc": "tsc",
 		"dev": "make do-dev-server",
-		"build": "make dist"
+		"build": "make dist",
+		"test": "make test"
 	},
 	"devDependencies": {
 		"@keetanetwork/eslint-config-typescript": "1.4.6",

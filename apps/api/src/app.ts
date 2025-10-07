@@ -21,7 +21,7 @@ export function createFXHandler({ userClient, logger, account }: Pick<ServerConf
 			/**
 			 * Calculate converted amount based on affinity
 			 */
-			let convertedAmount: string
+			let convertedAmount: Numeric
 			if (request.affinity === 'from') {
 				// Calculate exchange rate
 				logger?.debug(`Calculating exchange rate for ${toTokenInfo.currencyCode} -> ${fromTokenInfo.currencyCode}`);
@@ -31,7 +31,7 @@ export function createFXHandler({ userClient, logger, account }: Pick<ServerConf
 				// Convert the amount
 				const requestAmount = new Numeric(request.amount, fromTokenInfo.decimalPlaces)
 				const converted = new Numeric(Math.round(Number(requestAmount) * rate.toNumber()), fromTokenInfo.decimalPlaces)
-				convertedAmount = converted.convertDecimalPlaces(toTokenInfo.decimalPlaces).toString()
+				convertedAmount = converted.convertDecimalPlaces(toTokenInfo.decimalPlaces)
 			} else {
 				// Calculate exchange rate
 				logger?.debug(`Calculating exchange rate for ${fromTokenInfo.currencyCode} -> ${toTokenInfo.currencyCode}`);
@@ -41,7 +41,11 @@ export function createFXHandler({ userClient, logger, account }: Pick<ServerConf
 				// Convert the amount
 				const requestAmount = new Numeric(request.amount, toTokenInfo.decimalPlaces)
 				const converted = new Numeric(Math.round(Number(requestAmount) * rate.toNumber()), toTokenInfo.decimalPlaces)
-				convertedAmount = converted.convertDecimalPlaces(fromTokenInfo.decimalPlaces).toString()
+				convertedAmount = converted.convertDecimalPlaces(fromTokenInfo.decimalPlaces)
+			}
+
+			if (convertedAmount.valueOf() <= 0n) {
+				throw(new Error("Invalid converted amount"));
 			}
 
 			/**
@@ -56,7 +60,7 @@ export function createFXHandler({ userClient, logger, account }: Pick<ServerConf
 			// Return the converted amount and cost
 			return({
 				account: account.publicKeyString.get(),
-				convertedAmount,
+				convertedAmount: convertedAmount.toString(),
 				cost
 			});
 		}

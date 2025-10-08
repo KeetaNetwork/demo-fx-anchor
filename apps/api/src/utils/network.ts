@@ -1,7 +1,7 @@
 import type * as Anchor from "@keetanetwork/anchor";
 import { decodeTokenMetadata } from "@keetanetwork/web-ui-utils/helpers/keetanet-tokens";
 
-interface TokenInfo {
+export interface TokenInfo {
 	currencyCode: string
 	decimalPlaces: number
 }

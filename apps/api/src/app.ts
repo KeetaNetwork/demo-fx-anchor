@@ -1,48 +1,52 @@
 import type { KeetaAnchorFXServerConfig } from "@keetanetwork/anchor/services/fx/server";
 import { Numeric } from "@keetanetwork/web-ui-utils/helpers/Numeric";
+import type { TokenInfo } from "./utils/network";
 import { getTokenInfo } from "./utils/network";
 import { getExchangeRate } from "./utils/rates";
 import type { ServerConfig } from "./server";
 
-export function createFXHandler({ userClient, logger, account }: Pick<ServerConfig, 'userClient' | 'logger' | 'account'>): KeetaAnchorFXServerConfig['fx'] {
+interface FXHandlerProps extends Pick<ServerConfig, 'userClient' | 'logger' | 'account'> {
+	baseTokenInfo: TokenInfo
+}
+
+export function createFXHandler({ userClient, logger, account, baseTokenInfo }: FXHandlerProps): KeetaAnchorFXServerConfig['fx'] {
 
 	return({
 		getConversionRateAndFee: async function(request) {
 			logger?.debug("Request received", request);
 
 			/**
+			 * Select which is the "affinity" token and which is the "converted" token.
+			 * This is important to use the right decimalPlaces
+			 */
+			const affinityTokenPublicKey = request.affinity === 'from' ? request.from : request.to
+			const convertedTokenPublicKey = request.affinity === 'from' ? request.to : request.from
+
+			/**
 			 * Look up the token information for both currencies
 			 */
-			const [fromTokenInfo, toTokenInfo] = await Promise.all([
-				getTokenInfo(userClient, request.from),
-				getTokenInfo(userClient, request.to)
+			const [affinityTokenInfo, convertedTokenInfo] = await Promise.all([
+				getTokenInfo(userClient, affinityTokenPublicKey),
+				getTokenInfo(userClient, convertedTokenPublicKey)
 			])
 
 			/**
 			 * Calculate converted amount based on affinity
 			 */
-			let convertedAmount: Numeric
-			if (request.affinity === 'from') {
-				// Calculate exchange rate
-				logger?.debug(`Calculating exchange rate for ${toTokenInfo.currencyCode} -> ${fromTokenInfo.currencyCode}`);
-				const { rate } = await getExchangeRate(toTokenInfo.currencyCode, fromTokenInfo.currencyCode);
-				logger?.debug(`Base rate: ${rate}`)
+			logger?.debug(`Calculating exchange rate for ${affinityTokenInfo.currencyCode} -> ${convertedTokenInfo.currencyCode}`);
+			const { rate } = await getExchangeRate(affinityTokenInfo.currencyCode, convertedTokenInfo.currencyCode);
+			logger?.debug(`Base rate: ${rate}`)
 
-				// Convert the amount
-				const requestAmount = new Numeric(request.amount, fromTokenInfo.decimalPlaces)
-				const converted = new Numeric(Math.round(Number(requestAmount) * rate.toNumber()), fromTokenInfo.decimalPlaces)
-				convertedAmount = converted.convertDecimalPlaces(toTokenInfo.decimalPlaces)
-			} else {
-				// Calculate exchange rate
-				logger?.debug(`Calculating exchange rate for ${fromTokenInfo.currencyCode} -> ${toTokenInfo.currencyCode}`);
-				const { rate } = await getExchangeRate(fromTokenInfo.currencyCode, toTokenInfo.currencyCode);
-				logger?.debug(`Base rate: ${rate}`)
+			// Get the highest decimal places
+			const highestDecimalPlaces = Math.max(affinityTokenInfo.decimalPlaces, convertedTokenInfo.decimalPlaces)
 
-				// Convert the amount
-				const requestAmount = new Numeric(request.amount, toTokenInfo.decimalPlaces)
-				const converted = new Numeric(Math.round(Number(requestAmount) * rate.toNumber()), toTokenInfo.decimalPlaces)
-				convertedAmount = converted.convertDecimalPlaces(fromTokenInfo.decimalPlaces)
-			}
+			// Convert the amount
+			const fixedAmount = new Numeric(request.amount, affinityTokenInfo.decimalPlaces).convertDecimalPlaces(highestDecimalPlaces)
+			const fixedRate = Numeric.fromDecimalString(rate.toString(), highestDecimalPlaces)
+
+			const converted = fixedAmount.valueOf() * fixedRate.valueOf() / BigInt(10 ** highestDecimalPlaces)
+			const convertedAmount = new Numeric(converted, highestDecimalPlaces).convertDecimalPlaces(convertedTokenInfo.decimalPlaces)
+			logger?.debug("Converted:", convertedAmount.toDecimalString())
 
 			if (convertedAmount.valueOf() <= 0n) {
 				throw(new Error("Invalid converted amount"));
@@ -53,7 +57,7 @@ export function createFXHandler({ userClient, logger, account }: Pick<ServerConf
 			 * For demo purposes, we set cost to 0
 			 */
 			const cost = {
-				amount: '0',
+				amount: Numeric.fromDecimalString('0.000000001', baseTokenInfo.decimalPlaces).toString(),
 				token: userClient.baseToken.publicKeyString.get()
 			}
 

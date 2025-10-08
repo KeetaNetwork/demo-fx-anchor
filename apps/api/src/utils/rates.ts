@@ -8,39 +8,39 @@ interface ExchangeRate {
 const USDRates: ExchangeRate[] = [
 	{
 		'currencyCode': 'KTA',
-		'rate': new Decimal("1.7283")
+		'rate': new Decimal("1.1363636364")
 	},
 	{
 		'currencyCode': 'BTC',
-		'rate': new Decimal("125341.40")
+		'rate': new Decimal("122000")
 	},
 	{
 		'currencyCode': 'CBBTC',
-		'rate': new Decimal("125341.40")
+		'rate': new Decimal("122000")
 	},
 	{
 		'currencyCode': 'USDC',
-		'rate': new Decimal("1")
+		'rate': new Decimal("1.00")
 	},
 	{
 		'currencyCode': 'CAD',
-		'rate': new Decimal("1.2501")
+		'rate': new Decimal("1.3950")
 	},
 	{
 		'currencyCode': 'GBP',
-		'rate': new Decimal("0.710177")
+		'rate': new Decimal("0.7453")
 	},
 	{
 		'currencyCode': 'MXN',
-		'rate': new Decimal("19.2635")
+		'rate': new Decimal("18.40")
 	},
 	{
 		'currencyCode': 'EUR',
-		'rate': new Decimal("0.843241")
+		'rate': new Decimal("0.8581")
 	},
 	{
 		'currencyCode': 'BRL',
-		'rate': new Decimal("0.19057")
+		'rate': new Decimal("5.65")
 	}
 ];
 

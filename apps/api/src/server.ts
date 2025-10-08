@@ -3,6 +3,7 @@ import { KeetaNetFXAnchorHTTPServer } from "@keetanetwork/anchor/services/fx/ser
 
 import type * as Anchor from "@keetanetwork/anchor";
 import { createFXHandler } from "./app";
+import { getTokenInfo } from "./utils/network";
 
 /**
  * Configuration interface for creating a KeetaNet FX Anchor server.
@@ -44,6 +45,9 @@ export interface ServerConfig extends Pick<KeetaAnchorFXServerConfig, 'port' | '
  * ```
  */
 export async function createServer({ account, userClient, port, logger }: ServerConfig) {
+	// Get base token info
+	const baseTokenInfo = await getTokenInfo(userClient, userClient.baseToken)
+
 	// Set up the FX Anchor HTTP server
 	const server = new KeetaNetFXAnchorHTTPServer({
 		account,
@@ -51,7 +55,7 @@ export async function createServer({ account, userClient, port, logger }: Server
 		quoteSigner: account,
 		port,
 		logger,
-		fx: createFXHandler({ userClient, logger, account })
+		fx: createFXHandler({ userClient, logger, account, baseTokenInfo })
 	})
 
 	// Start the server

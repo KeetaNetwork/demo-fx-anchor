@@ -12,11 +12,11 @@ const USDRates: ExchangeRate[] = [
 	},
 	{
 		'currencyCode': 'BTC',
-		'rate': new Decimal("122000")
+		'rate': new Decimal("125341.40")
 	},
 	{
 		'currencyCode': 'CBBTC',
-		'rate': new Decimal("122000")
+		'rate': new Decimal("125341.40")
 	},
 	{
 		'currencyCode': 'USDC',

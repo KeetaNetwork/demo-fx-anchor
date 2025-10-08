@@ -92,7 +92,7 @@ export async function setup(logger?: Logger) {
 	const createTokensBuilder = lpUserClient.initBuilder();
 	const currencyUSD = await buildTokenBlocks(createTokensBuilder, 2, 1_000_000_000_00n, "USD"); // 1,000,000,000.00
 	const currencyEUR = await buildTokenBlocks(createTokensBuilder, 2, 1_000_000_000_00n, "EUR"); // 1,000,000,000.00
-	const currencyMXN = await buildTokenBlocks(createTokensBuilder, 2, 1_000_000_000_00n, "MXN"); // 1,000,000,000.00
+	const currencyKTA = await buildTokenBlocks(createTokensBuilder, 9, 1_000_000_000_000_000000000n, "KTA"); // 1,000,000,000,000.000000000
 	const currencyBTC = await buildTokenBlocks(createTokensBuilder, 8, 1_000_00000000n, "BTC"); // 1,000.00000000
 	await lpUserClient.publishBuilder(createTokensBuilder);
 
@@ -100,7 +100,7 @@ export async function setup(logger?: Logger) {
 	const distributeTokensBuilder = lpUserClient.initBuilder();
 	distributeTokensBuilder.send(fxAccount, 500_000_000_00n, currencyUSD, undefined, { account: currencyUSD });
 	distributeTokensBuilder.send(fxAccount, 500_000_000_00n, currencyEUR, undefined, { account: currencyEUR });
-	distributeTokensBuilder.send(fxAccount, 500_000_000_00n, currencyMXN, undefined, { account: currencyMXN });
+	distributeTokensBuilder.send(fxAccount, 500_000_000_000_000000000n, currencyKTA, undefined, { account: currencyKTA });
 	distributeTokensBuilder.send(fxAccount, 500_00000000n, currencyBTC, undefined, { account: currencyBTC });
 	await lpUserClient.publishBuilder(distributeTokensBuilder);
 
@@ -114,7 +114,7 @@ export async function setup(logger?: Logger) {
 		tokens: {
 			USD: currencyUSD,
 			EUR: currencyEUR,
-			MXN: currencyMXN,
+			'$KTA': currencyKTA,
 			'$BTC': currencyBTC
 		}
 	});
@@ -140,8 +140,8 @@ export async function setupResolver(baseURL: string, fxUserClient: InstanceType<
 			currencyMap: {
 				USD: tokens.USD.publicKeyString.get(),
 				EUR: tokens.EUR.publicKeyString.get(),
-				MXN: tokens.MXN.publicKeyString.get(),
-				'$BTC': tokens['$BTC'].publicKeyString.get()
+				'$KTA': tokens.$KTA.publicKeyString.get(),
+				'$BTC': tokens.$BTC.publicKeyString.get()
 			},
 			services: {
 				fx: {
@@ -150,13 +150,13 @@ export async function setupResolver(baseURL: string, fxUserClient: InstanceType<
 							currencyCodes: [
 								tokens.USD.publicKeyString.get(),
 								tokens.EUR.publicKeyString.get(),
-								tokens.MXN.publicKeyString.get(),
+								tokens.$KTA.publicKeyString.get(),
 								tokens.$BTC.publicKeyString.get()
 							],
 							to: [
 								tokens.USD.publicKeyString.get(),
 								tokens.EUR.publicKeyString.get(),
-								tokens.MXN.publicKeyString.get(),
+								tokens.$KTA.publicKeyString.get(),
 								tokens.$BTC.publicKeyString.get()
 							]
 						}],

@@ -41,10 +41,12 @@ export function createFXHandler({ userClient, logger, account, baseTokenInfo }: 
 			const highestDecimalPlaces = Math.max(affinityTokenInfo.decimalPlaces, convertedTokenInfo.decimalPlaces)
 
 			// Convert the amount
-			const fixedAmount = new Numeric(request.amount, affinityTokenInfo.decimalPlaces).convertDecimalPlaces(highestDecimalPlaces)
-			const fixedRate = Numeric.fromDecimalString(rate.toString(), highestDecimalPlaces)
+			const amountNumeric = new Numeric(request.amount, affinityTokenInfo.decimalPlaces).convertDecimalPlaces(highestDecimalPlaces)
+			const rateNumeric = Numeric.fromDecimalString(rate.toString(), highestDecimalPlaces)
 
-			const converted = fixedAmount.valueOf() * fixedRate.valueOf() / BigInt(10 ** highestDecimalPlaces)
+			const fixedAmount = amountNumeric.valueOf() * BigInt(10 ** highestDecimalPlaces)
+			const fixedRate = rateNumeric.valueOf()
+			const converted = fixedAmount / fixedRate
 			const convertedAmount = new Numeric(converted, highestDecimalPlaces).convertDecimalPlaces(convertedTokenInfo.decimalPlaces)
 			logger?.debug("Converted:", convertedAmount.toDecimalString())
 

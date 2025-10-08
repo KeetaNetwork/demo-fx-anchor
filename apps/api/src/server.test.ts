@@ -59,12 +59,15 @@ describe('Server', async () => {
 		it("Send funds to user account", async () => {
 			const ADD_USER_USD = 200_000_00n // 200,000.00
 			const ADD_USER_EUR = 200_000_00n // 200,000.00
+			const ADD_USER_KTA = 200_000_000000000n // 200,000.000000000
 			await lpUserClient.send(userAccount, ADD_USER_USD, tokens.USD, undefined, { account: tokens.USD })
 			await lpUserClient.send(userAccount, ADD_USER_EUR, tokens.EUR, undefined, { account: tokens.EUR })
+			await lpUserClient.send(userAccount, ADD_USER_KTA, tokens.$KTA, undefined, { account: tokens.$KTA })
 			logger.info(logOptions, "FX.Client", "Sent funds to user account")
 
 			expect(await userClient.balance(tokens.USD)).toBe(ADD_USER_USD)
 			expect(await userClient.balance(tokens.EUR)).toBe(ADD_USER_EUR)
+			expect(await userClient.balance(tokens.$KTA)).toBe(ADD_USER_KTA)
 		})
 
 		/**
@@ -73,35 +76,35 @@ describe('Server', async () => {
 		const tests = [
 			// Convert USD to EUR.
 			{
-				title: "Convert 500.00 USD to EUR (expected = 592.95 EUR)",
+				title: "Convert 500.00 USD to EUR (expected = 588.23 EUR)",
 				affinity: "from",
 				amount: 50000n, // 500.00
 				from: tokens.USD,
 				to: tokens.EUR,
 
-				expectedConvertedAmount: 59295n // 592.95 - Rate: 0.843241
+				expectedConvertedAmount: 58823n
 			},
 
 			// Convert EUR to USD.
 			{
-				title: "Convert EUR to 500.00 USD. (expected = 592.95 EUR)",
+				title: "Convert EUR to 500.00 USD. (expected = 588.23 EUR)",
 				affinity: "to",
 				amount: 50000n, // 500.00
 				from: tokens.EUR,
 				to: tokens.USD,
 
-				expectedConvertedAmount: 59295n
+				expectedConvertedAmount: 58823n
 			},
 
 			// Convert EUR to BTC
 			{
-				title: "Convert EUR to 1.00000000 BTC (expected = 148,642.44 EUR)",
+				title: "Convert KTA to 1.00000000 BTC (expected = 110,302.228105007 KTA)",
 				affinity: "to",
 				amount: 1_00000000n, // 1.00000000
-				from: tokens.EUR,
+				from: tokens.$KTA,
 				to: tokens.$BTC,
 
-				expectedConvertedAmount: 14864244n
+				expectedConvertedAmount: 110302228105007n
 			}
 		] as const
 

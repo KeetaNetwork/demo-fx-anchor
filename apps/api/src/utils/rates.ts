@@ -151,12 +151,8 @@ export function scaleDecimals(value: bigint, fromDecimalPlaces: number, toDecima
 }
 
 export function calculateConvertedAmount(amount: bigint, rate: bigint, affinityDecimalPlaces: number, convertedDecimalPlaces: number): bigint {
-	const calcPrecision = ratePrecision
-
-	const scaledRate = scaleDecimals(rate, ratePrecision, calcPrecision)
-	const scaledAmount = scaleDecimals(amount, affinityDecimalPlaces, calcPrecision)
-
-	const converted = BigInt(new Decimal(scaledAmount).mul(rateFactor).div(scaledRate).toFixed(0))
-	const convertedAmount = scaleDecimals(converted, calcPrecision, convertedDecimalPlaces)
+	const scaledAmount = scaleDecimals(amount, affinityDecimalPlaces, ratePrecision)
+	const converted = BigInt(new Decimal(scaledAmount).mul(rateFactor).div(rate).toFixed(0))
+	const convertedAmount = scaleDecimals(converted, ratePrecision, convertedDecimalPlaces)
 	return(convertedAmount);
 }

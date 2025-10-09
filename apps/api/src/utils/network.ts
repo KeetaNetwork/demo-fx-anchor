@@ -1,11 +1,18 @@
 import type * as Anchor from "@keetanetwork/anchor";
-import { decodeTokenMetadata } from "@keetanetwork/web-ui-utils/helpers/keetanet-tokens";
 
 export interface TokenInfo {
 	currencyCode: string
 	decimalPlaces: number
 }
 const tokensMemCache = new Map<string, TokenInfo>();
+
+export function getTokenDecimals(metadata: string): number {
+	const tokenMetadata: unknown = JSON.parse(Buffer.from(metadata, 'base64').toString());
+	if (tokenMetadata && typeof tokenMetadata === 'object' && 'decimalPlaces' in tokenMetadata && typeof tokenMetadata.decimalPlaces === 'number') {
+		return(tokenMetadata.decimalPlaces)
+	}
+	return(0);
+}
 
 export async function getTokenInfo(userClient: InstanceType<typeof Anchor.KeetaNet.UserClient>, account: InstanceType<typeof Anchor.KeetaNet.lib.Account> | string) {
 	const cached = tokensMemCache.get(typeof account === "string" ? account : account.publicKeyString.get())
@@ -16,7 +23,7 @@ export async function getTokenInfo(userClient: InstanceType<typeof Anchor.KeetaN
 	const { info } = await userClient.client.getAccountInfo(account)
 	const tokenInfo = {
 		currencyCode: info.name.length > 0 ? info.name : info.description.toUpperCase(),
-		...decodeTokenMetadata(info.metadata)
+		decimalPlaces: getTokenDecimals(info.metadata)
 	} satisfies TokenInfo
 
 	tokensMemCache.set(typeof account === "string" ? account : account.publicKeyString.get(), tokenInfo)

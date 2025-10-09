@@ -1,15 +1,14 @@
 import type { KeetaAnchorFXServerConfig } from "@keetanetwork/anchor/services/fx/server";
-import { Numeric } from "@keetanetwork/web-ui-utils/helpers/Numeric";
 import type { TokenInfo } from "./utils/network";
 import { getTokenInfo } from "./utils/network";
-import { getExchangeRate } from "./utils/rates";
+import { calculateConvertedAmount, getExchangeRate } from "./utils/rates";
 import type { ServerConfig } from "./server";
 
 interface FXHandlerProps extends Pick<ServerConfig, 'userClient' | 'logger' | 'account'> {
 	baseTokenInfo: TokenInfo
 }
 
-export function createFXHandler({ userClient, logger, account, baseTokenInfo }: FXHandlerProps): KeetaAnchorFXServerConfig['fx'] {
+export function createFXHandler({ userClient, logger, account }: FXHandlerProps): KeetaAnchorFXServerConfig['fx'] {
 
 	return({
 		getConversionRateAndFee: async function(request) {
@@ -37,20 +36,10 @@ export function createFXHandler({ userClient, logger, account, baseTokenInfo }: 
 			const { rate } = await getExchangeRate(affinityTokenInfo.currencyCode, convertedTokenInfo.currencyCode);
 			logger?.debug(`Base rate: ${rate}`)
 
-			// Get the highest decimal places
-			const highestDecimalPlaces = Math.max(affinityTokenInfo.decimalPlaces, convertedTokenInfo.decimalPlaces)
+			const convertedAmount = calculateConvertedAmount(BigInt(request.amount), rate, affinityTokenInfo.decimalPlaces, convertedTokenInfo.decimalPlaces)
+			logger?.debug("Converted:", convertedAmount)
 
-			// Convert the amount
-			const amountNumeric = new Numeric(request.amount, affinityTokenInfo.decimalPlaces).convertDecimalPlaces(highestDecimalPlaces)
-			const rateNumeric = Numeric.fromDecimalString(rate.toString(), highestDecimalPlaces)
-
-			const fixedAmount = amountNumeric.valueOf() * BigInt(10 ** highestDecimalPlaces)
-			const fixedRate = rateNumeric.valueOf()
-			const converted = fixedAmount / fixedRate
-			const convertedAmount = new Numeric(converted, highestDecimalPlaces).convertDecimalPlaces(convertedTokenInfo.decimalPlaces)
-			logger?.debug("Converted:", convertedAmount.toDecimalString())
-
-			if (convertedAmount.valueOf() <= 0n) {
+			if (convertedAmount <= 0n) {
 				throw(new Error("Invalid converted amount"));
 			}
 
@@ -59,7 +48,7 @@ export function createFXHandler({ userClient, logger, account, baseTokenInfo }: 
 			 * For demo purposes, we set cost to 0
 			 */
 			const cost = {
-				amount: Numeric.fromDecimalString('0.000000001', baseTokenInfo.decimalPlaces).toString(),
+				amount: "1",
 				token: userClient.baseToken.publicKeyString.get()
 			}
 

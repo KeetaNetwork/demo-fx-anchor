@@ -2,45 +2,50 @@ import Decimal from "decimal.js";
 
 interface ExchangeRate {
 	currencyCode: string;
-	rate: Decimal;
+	rate: bigint;
 }
 
+export const ratePrecision = 16
+
+export const rateFactor = 10 ** ratePrecision
+
+// Rates using 16 decimal places
 const USDRates: ExchangeRate[] = [
 	{
 		'currencyCode': 'KTA',
-		'rate': new Decimal("1.1363636364")
+		'rate': BigInt(new Decimal(1.3).mul(rateFactor).toFixed(0))
 	},
 	{
 		'currencyCode': 'BTC',
-		'rate': new Decimal("125341.40")
+		'rate': BigInt(new Decimal(125341.4).mul(rateFactor).toFixed(0))
 	},
 	{
 		'currencyCode': 'CBBTC',
-		'rate': new Decimal("125341.40")
+		'rate': BigInt(new Decimal(125341.4).mul(rateFactor).toFixed(0))
 	},
 	{
 		'currencyCode': 'USDC',
-		'rate': new Decimal("1.00")
+		'rate': BigInt(new Decimal(1).mul(rateFactor).toFixed(0))
 	},
 	{
 		'currencyCode': 'CAD',
-		'rate': new Decimal("1.3950")
+		'rate': BigInt(new Decimal(1.395).mul(rateFactor).toFixed(0))
 	},
 	{
 		'currencyCode': 'GBP',
-		'rate': new Decimal("0.7453")
+		'rate': BigInt(new Decimal(0.7453).mul(rateFactor).toFixed(0))
 	},
 	{
 		'currencyCode': 'MXN',
-		'rate': new Decimal("18.40")
+		'rate': BigInt(new Decimal(18.4).mul(rateFactor).toFixed(0))
 	},
 	{
 		'currencyCode': 'EUR',
-		'rate': new Decimal("0.8581")
+		'rate': BigInt(new Decimal(0.8581).mul(rateFactor).toFixed(0))
 	},
 	{
 		'currencyCode': 'BRL',
-		'rate': new Decimal("5.65")
+		'rate': BigInt(new Decimal(5.65).mul(rateFactor).toFixed(0))
 	}
 ];
 
@@ -68,7 +73,8 @@ export async function getRates(anchorCurrencyCode: string): Promise<ExchangeRate
 		if (currency === anchorCurrencyCode) {
 			continue;
 		}
-		const usdRate = new Decimal(1).div(anchorUSDRate.rate);
+		const usdRate = BigInt(new Decimal(rateFactor).mul(rateFactor).div(anchorUSDRate.rate).toFixed(0));
+		// const usdRate = BigInt(rateFactor) * BigInt(rateFactor) / anchorUSDRate.rate;
 
 		// Rates list is for USD so return inverse of USD rate
 		if (currency === 'USD') {
@@ -87,7 +93,7 @@ export async function getRates(anchorCurrencyCode: string): Promise<ExchangeRate
 		rates.push({
 			currencyCode: currency,
 			// Multiply inverse of USD rate and other pairs USD rate to get exchange rate
-			rate: pairUSDRate.rate.mul(usdRate)
+			rate: BigInt(new Decimal(pairUSDRate.rate).mul(usdRate).div(rateFactor).toFixed(0))
 		});
 	}
 
@@ -103,7 +109,7 @@ export async function getExchangeRate(fromCurrencyCode: string, toCurrencyCode: 
 	if (fromCurrencyCode === toCurrencyCode) {
 		return({
 			currencyCode: toCurrencyCode,
-			rate: new Decimal(1)
+			rate: 1_00000000n
 		});
 	}
 
@@ -120,4 +126,37 @@ export async function getExchangeRate(fromCurrencyCode: string, toCurrencyCode: 
 		currencyCode: toCurrencyCode,
 		rate: toCurrencyRate.rate
 	});
+}
+
+export function scaleDecimals(value: bigint, fromDecimalPlaces: number, toDecimalPlaces: number) {
+	if (!Number.isInteger(fromDecimalPlaces) || !Number.isInteger(toDecimalPlaces)) {
+		throw(new Error("Decimal places MUST be integer"));
+	}
+
+	if (fromDecimalPlaces === toDecimalPlaces) {
+		return(value);
+	}
+
+	const difference = toDecimalPlaces - fromDecimalPlaces
+	if (difference > 0) {
+		// Increase decimal places: multiply by 10^(difference)
+		const factor = BigInt(10) ** BigInt(difference)
+		return(value * factor);
+	} else {
+		// Decrease decimal places: divide by 10^(difference) with rounding
+		const factor = BigInt(10) ** BigInt(-difference)
+		const adjustedValue = value >= 0n ? value + factor / 2n : value - factor / 2n
+		return(adjustedValue / factor);
+	}
+}
+
+export function calculateConvertedAmount(amount: bigint, rate: bigint, affinityDecimalPlaces: number, convertedDecimalPlaces: number): bigint {
+	const calcPrecision = ratePrecision
+
+	const scaledRate = scaleDecimals(rate, ratePrecision, calcPrecision)
+	const scaledAmount = scaleDecimals(amount, affinityDecimalPlaces, calcPrecision)
+
+	const converted = BigInt(new Decimal(scaledAmount).mul(rateFactor).div(scaledRate).toFixed(0))
+	const convertedAmount = scaleDecimals(converted, calcPrecision, convertedDecimalPlaces)
+	return(convertedAmount);
 }

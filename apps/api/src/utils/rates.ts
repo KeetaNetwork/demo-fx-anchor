@@ -109,7 +109,7 @@ export async function getExchangeRate(fromCurrencyCode: string, toCurrencyCode: 
 	if (fromCurrencyCode === toCurrencyCode) {
 		return({
 			currencyCode: toCurrencyCode,
-			rate: 1_00000000n
+			rate: BigInt(rateFactor)
 		});
 	}
 

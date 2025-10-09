@@ -76,42 +76,42 @@ describe('Server', async () => {
 		const tests = [
 			// Convert USD to EUR.
 			{
-				title: "Convert 500.00 USD to EUR (expected = 582.68 EUR)",
+				title: "Convert 500.00 USD to EUR (expected = 429.05 EUR)",
 				affinity: "from",
 				amount: 50000n, // 500.00
 				from: tokens.USD,
 				to: tokens.EUR,
 
-				expectedConvertedAmount: 58268n
+				expectedConvertedAmount: 42905n
 			},
 
 			// Convert EUR to USD.
 			{
-				title: "Convert EUR to 500.00 USD. (expected = 582.68 EUR)",
+				title: "Convert EUR to 500.00 USD. (expected = 429.05 EUR)",
 				affinity: "to",
 				amount: 50000n, // 500.00
 				from: tokens.EUR,
 				to: tokens.USD,
 
-				expectedConvertedAmount: 58268n
+				expectedConvertedAmount: 42905n
 			},
 
 			// Convert USD to BTC
 			{
-				title: "Convert USD to 1.00000000 BTC (expected = 125,341.4 USD)",
+				title: "Convert USD to 1.00000000 BTC (expected = 125,341.56 USD)",
 				affinity: "to",
 				amount: 1_00000000n, // 1.00000000
 				from: tokens.USD,
 				to: tokens.$BTC,
 
-				expectedConvertedAmount: 12534140n
+				expectedConvertedAmount: 125_341_56n
 			},
 
 			// Convert BTC to USD
 			{
-				title: "Convert 1.00000000 BTC to USD (expected = 125,341.4 USD)",
+				title: "Convert 1.00000000 BTC to USD (expected = 125,341.56 USD)",
 				affinity: "to",
-				amount: 12534140n,
+				amount: 125_341_56n,
 				from: tokens.$BTC,
 				to: tokens.USD,
 
@@ -120,13 +120,13 @@ describe('Server', async () => {
 
 			// Convert KTA to BTC
 			{
-				title: "Convert KTA to 1.00000000 BTC (expected = 96,416.461538564 KTA)",
+				title: "Convert KTA to 1.00000000 BTC (expected = 162,944.027975594 KTA)",
 				affinity: "to",
 				amount: 1_00000000n, // 1.00000000
 				from: tokens.$KTA,
 				to: tokens.$BTC,
 
-				expectedConvertedAmount: 96416_461538564n
+				expectedConvertedAmount: 162_944_027975594n
 			}
 		] as const
 

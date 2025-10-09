@@ -23,9 +23,8 @@ export interface ServerConfig extends Pick<KeetaAnchorFXServerConfig, 'port' | '
 /**
  * Creates and starts a KeetaNet FX Anchor HTTP server with custom exchange rate logic.
  *
- * This function initializes an FX Anchor server that handles foreign exchange conversion requests
- * between different tokens on the KeetaNet network. It uses external exchange rate APIs and
- * performs currency conversions based on token decimal places.
+ * This function initializes an FX Anchor server that handles exchange conversion requests
+ * between different tokens on the KeetaNet network. User is responsible for managing rates.
  *
  * @param config - Server configuration object
  * @param config.account - KeetaNet account used for signing quotes and server operations

@@ -1,51 +1,49 @@
-import Decimal from "decimal.js";
-
 interface ExchangeRate {
 	currencyCode: string;
-	rate: bigint;
+	rate: number;
 }
 
-export const ratePrecision = 16
+export const precision = 16
 
-export const rateFactor = 10 ** ratePrecision
+export const rateFactor = 10 ** precision
 
 // Rates using 16 decimal places
 const USDRates: ExchangeRate[] = [
 	{
 		'currencyCode': 'KTA',
-		'rate': BigInt(new Decimal(1.3).mul(rateFactor).toFixed(0))
+		'rate': 1.3
 	},
 	{
 		'currencyCode': 'BTC',
-		'rate': BigInt(new Decimal(125341.4).mul(rateFactor).toFixed(0))
+		'rate': 0.00000797819973
 	},
 	{
 		'currencyCode': 'CBBTC',
-		'rate': BigInt(new Decimal(125341.4).mul(rateFactor).toFixed(0))
+		'rate': 0.00000797819973
 	},
 	{
 		'currencyCode': 'USDC',
-		'rate': BigInt(new Decimal(1).mul(rateFactor).toFixed(0))
+		'rate': 1
 	},
 	{
 		'currencyCode': 'CAD',
-		'rate': BigInt(new Decimal(1.395).mul(rateFactor).toFixed(0))
+		'rate': 1.395
 	},
 	{
 		'currencyCode': 'GBP',
-		'rate': BigInt(new Decimal(0.7453).mul(rateFactor).toFixed(0))
+		'rate': 0.7453
 	},
 	{
 		'currencyCode': 'MXN',
-		'rate': BigInt(new Decimal(18.4).mul(rateFactor).toFixed(0))
+		'rate': 18.4
 	},
 	{
 		'currencyCode': 'EUR',
-		'rate': BigInt(new Decimal(0.8581).mul(rateFactor).toFixed(0))
+		'rate': 0.8581
 	},
 	{
 		'currencyCode': 'BRL',
-		'rate': BigInt(new Decimal(5.65).mul(rateFactor).toFixed(0))
+		'rate': 5.65
 	}
 ];
 
@@ -73,8 +71,8 @@ export async function getRates(anchorCurrencyCode: string): Promise<ExchangeRate
 		if (currency === anchorCurrencyCode) {
 			continue;
 		}
-		const usdRate = BigInt(new Decimal(rateFactor).mul(rateFactor).div(anchorUSDRate.rate).toFixed(0));
-		// const usdRate = BigInt(rateFactor) * BigInt(rateFactor) / anchorUSDRate.rate;
+		// Trim rate to expected precision
+		const usdRate = Math.round(rateFactor / anchorUSDRate.rate) / rateFactor;
 
 		// Rates list is for USD so return inverse of USD rate
 		if (currency === 'USD') {
@@ -93,7 +91,7 @@ export async function getRates(anchorCurrencyCode: string): Promise<ExchangeRate
 		rates.push({
 			currencyCode: currency,
 			// Multiply inverse of USD rate and other pairs USD rate to get exchange rate
-			rate: BigInt(new Decimal(pairUSDRate.rate).mul(usdRate).div(rateFactor).toFixed(0))
+			rate: pairUSDRate.rate * usdRate
 		});
 	}
 
@@ -109,7 +107,7 @@ export async function getExchangeRate(fromCurrencyCode: string, toCurrencyCode: 
 	if (fromCurrencyCode === toCurrencyCode) {
 		return({
 			currencyCode: toCurrencyCode,
-			rate: BigInt(rateFactor)
+			rate: 1
 		});
 	}
 
@@ -128,31 +126,32 @@ export async function getExchangeRate(fromCurrencyCode: string, toCurrencyCode: 
 	});
 }
 
-export function scaleDecimals(value: bigint, fromDecimalPlaces: number, toDecimalPlaces: number) {
-	if (!Number.isInteger(fromDecimalPlaces) || !Number.isInteger(toDecimalPlaces)) {
+export function scalePrecision(value: bigint, fromPrecision: number, toPrecision: number) {
+	if (!Number.isInteger(fromPrecision) || !Number.isInteger(toPrecision)) {
 		throw(new Error("Decimal places MUST be integer"));
 	}
 
-	if (fromDecimalPlaces === toDecimalPlaces) {
+	if (fromPrecision === toPrecision) {
 		return(value);
 	}
 
-	const difference = toDecimalPlaces - fromDecimalPlaces
+	const difference = toPrecision - fromPrecision
 	if (difference > 0) {
-		// Increase decimal places: multiply by 10^(difference)
-		const factor = BigInt(10) ** BigInt(difference)
+		// Increase precision places: multiply by 10^(difference)
+		const factor = 10n ** BigInt(difference)
 		return(value * factor);
 	} else {
-		// Decrease decimal places: divide by 10^(difference) with rounding
-		const factor = BigInt(10) ** BigInt(-difference)
+		// Decrease precision: divide by 10^(difference)
+		const factor = 10n ** BigInt(-difference)
+		// Adjust for rounding
 		const adjustedValue = value >= 0n ? value + factor / 2n : value - factor / 2n
 		return(adjustedValue / factor);
 	}
 }
 
-export function calculateConvertedAmount(amount: bigint, rate: bigint, affinityDecimalPlaces: number, convertedDecimalPlaces: number): bigint {
-	const scaledAmount = scaleDecimals(amount, affinityDecimalPlaces, ratePrecision)
-	const converted = BigInt(new Decimal(scaledAmount).mul(rateFactor).div(rate).toFixed(0))
-	const convertedAmount = scaleDecimals(converted, ratePrecision, convertedDecimalPlaces)
+export function calculateConvertedAmount(amount: bigint, rate: number, affinityPrecision: number, convertedPrecision: number): bigint {
+	const scaledAmount = scalePrecision(amount, affinityPrecision, precision)
+	const converted = (scaledAmount * BigInt(Math.round(rate * rateFactor))) / BigInt(rateFactor)
+	const convertedAmount = scalePrecision(converted, precision, convertedPrecision)
 	return(convertedAmount);
 }

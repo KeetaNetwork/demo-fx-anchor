@@ -35,7 +35,7 @@ The project is organized as a monorepo with the following structure:
 
 -   **Real-time Currency Conversion**: Calculates exchange rates between supported token pairs
 -   **Affinity-based Conversions**: Supports both "from" and "to" currency affinity modes
--   **Decimal Precision Handling**: Properly converts amounts between tokens with different decimal places
+-   **Precision Handling**: Properly converts amounts between tokens with different precision
 -   **Zero-fee Demo Mode**: Configured with zero network and processing fees for demonstration purposes
 -   **Cloud-Ready**: Includes Docker containerization and GCP Cloud Run deployment
 -   **Comprehensive Testing**: Includes unit tests for core conversion logic
@@ -135,7 +135,7 @@ The anchor uses a USD-based rate table for all conversions. When converting betw
 
 1. Converts the source currency to USD
 2. Converts from USD to the destination currency
-3. Applies proper decimal place conversions
+3. Applies proper precision between different tokens for the conversions
 
 See `apps/api/src/utils/rates.ts` for the implementation.
 

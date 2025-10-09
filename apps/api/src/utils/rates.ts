@@ -7,7 +7,6 @@ export const precision = 16
 
 export const rateFactor = 10 ** precision
 
-// Rates using 16 decimal places
 const USDRates: ExchangeRate[] = [
 	{
 		'currencyCode': 'KTA',

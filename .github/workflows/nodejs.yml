@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, "releases/**" ]
+  pull_request:
+    branches: [ main, "releases/**" ]
+
+jobs:
+  build:
+    name: Tests
+    runs-on: ubuntu-latest-l
+
+    permissions:
+      contents: read
+      packages: read
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # We need to fetch the parent branch information for SonarCloud
+          fetch-depth: 0
+
+      - name: Read Node Version
+        run: echo "NODE_VERSION=$(jq -crM .engines.node < package.json)" >> $GITHUB_OUTPUT
+        shell: bash
+        id: node_version
+
+      - name: Use Node.js ${{ steps.node_version.outputs.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: '${{ steps.node_version.outputs.NODE_VERSION }}'
+          cache: 'npm'
+
+      - name: Run Lint
+        run: make test

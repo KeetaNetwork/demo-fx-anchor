@@ -21,5 +21,8 @@
 		"@keetanetwork/pulumi-components": "1.0.79",
 		"@pulumi/gcp": "8.39.0",
 		"@pulumi/pulumi": "3.187.0"
+	},
+	"engines": {
+		"node": "20.18.0"
 	}
 }

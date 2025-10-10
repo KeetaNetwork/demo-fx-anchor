@@ -11,10 +11,12 @@
 		"test": "make test"
 	},
 	"devDependencies": {
-		"@keetanetwork/anchor": "0.0.12",
 		"@vitest/ui": "3.2.4",
 		"tsup": "8.5.0",
 		"typescript": "5.8.3",
 		"vitest": "3.2.4"
+	},
+	"dependencies": {
+		"@keetanetwork/anchor": "0.0.13"
 	}
 }

@@ -20,7 +20,7 @@ describe("Rates", () => {
 	})
 
 	it("scalePrecision", () => {
-		// Same decimal places
+		// Same precision
 		expect(scalePrecision(10_0000n, 4, 4)).toBe(10_0000n) // 10.0000
 
 		// Scale UP
@@ -43,11 +43,11 @@ describe("Rates", () => {
 		const rateEUR2USD = await getExchangeRate("EUR", "USD")
 		expect(rateEUR2USD.rate).toBe(1.165365342034728)
 
-		// Using 3 decimals
+		// Using precision of 2 for both
 		expect(calculateConvertedAmount(10_00n, rateUSD2EUR.rate, 2, 2)).toBe(8_58n)
 		expect(calculateConvertedAmount(8_58n, rateEUR2USD.rate, 2, 2)).toBe(10_00n)
 
-		// Using from 2 decimals to 8 decimals
+		// Using from precision of 2 to precision of 8
 		expect(calculateConvertedAmount(10_00n, rateUSD2EUR.rate, 2, 8)).toBe(8_58100000n)
 		expect(calculateConvertedAmount(8_58100000n, rateEUR2USD.rate, 8, 2)).toBe(10_00n)
 
@@ -59,7 +59,7 @@ describe("Rates", () => {
 		const rateBTC2USD = await getExchangeRate("BTC", "USD")
 		expect(rateBTC2USD.rate).toBe(125341.559981226491556)
 
-		// Using from 2 decimals to 8 decimals
+		// Using from precision of 2 to precision of 8
 		expect(calculateConvertedAmount(10_00n, rateUSD2BTC.rate, 2, 8)).toBe(7978n) // 10 -> 0.00007978
 		expect(calculateConvertedAmount(7978n, rateBTC2USD.rate, 8, 2)).toBe(10_00n) // 0.00007978 -> 9.99749373
 	})

@@ -127,7 +127,7 @@ export async function getExchangeRate(fromCurrencyCode: string, toCurrencyCode: 
 
 export function scalePrecision(value: bigint, fromPrecision: number, toPrecision: number) {
 	if (!Number.isInteger(fromPrecision) || !Number.isInteger(toPrecision)) {
-		throw(new Error("Decimal places MUST be integer"));
+		throw(new Error("Precision MUST be integer"));
 	}
 
 	if (fromPrecision === toPrecision) {

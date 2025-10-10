@@ -48,14 +48,14 @@ export function createFXHandler({ userClient, logger, account }: FXHandlerProps)
 			 * For demo purposes, we set cost to 0
 			 */
 			const cost = {
-				amount: "1",
-				token: userClient.baseToken.publicKeyString.get()
+				amount: 0n,
+				token: userClient.baseToken
 			}
 
 			// Return the converted amount and cost
 			return({
-				account: account.publicKeyString.get(),
-				convertedAmount: convertedAmount.toString(),
+				account: account,
+				convertedAmount: convertedAmount,
 				cost
 			});
 		}

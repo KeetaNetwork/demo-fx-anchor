@@ -140,7 +140,7 @@ describe('Server', async () => {
 				// Get Estimates
 				const estimates = await fxClient.getEstimates({
 					affinity: test.affinity,
-					amount: test.amount.toString(),
+					amount: test.amount,
 					from: test.from,
 					to: test.to
 				})
@@ -151,10 +151,10 @@ describe('Server', async () => {
 				expect(estimates.length).toBe(1)
 
 				const [selected] = estimates
-				expect(selected.estimate.convertedAmount).toBe(test.expectedConvertedAmount.toString())
+				expect(selected.estimate.convertedAmount).toBe(test.expectedConvertedAmount)
 
 				const quote = await selected.getQuote()
-				expect(quote.quote.convertedAmount).toBe(test.expectedConvertedAmount.toString())
+				expect(quote.quote.convertedAmount).toBe(test.expectedConvertedAmount)
 				logger.info(logOptions, "FX.Client", "Got quote")
 				logger.debug(logOptions, "FX.Client", "quote.quote =", quote.quote)
 

@@ -16,6 +16,11 @@ export default defineConfig({
         '**/*.d.ts',
         '**/*.config.*',
       ]
+    },
+    server: {
+      deps: {
+        inline: ['@keetanetwork/web-ui-utils']
+      }
     }
   }
 })

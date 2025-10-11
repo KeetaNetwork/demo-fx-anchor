@@ -7,24 +7,16 @@
 		"tsup": "tsup",
 		"dev": "make do-dev-server",
 		"build": "make dist",
-		"test": "vitest",
-		"test:ui": "vitest --ui",
-		"test:coverage": "vitest --coverage"
+		"vitest": "vitest",
+		"test": "make test"
 	},
 	"devDependencies": {
-		"@keetanetwork/anchor": "0.0.7",
-		"@keetanetwork/currency-info": "1.2.5",
-		"@keetanetwork/web-ui-utils": "1.3.6",
 		"@vitest/ui": "3.2.4",
 		"tsup": "8.5.0",
 		"typescript": "5.8.3",
 		"vitest": "3.2.4"
 	},
 	"dependencies": {
-		"@hono/node-server": "1.18.1",
-		"decimal.js": "10.6.0",
-		"hono": "4.8.12",
-		"ts-postgres": "2.0.4",
-		"valibot": "1.1.0"
+		"@keetanetwork/anchor": "0.0.13"
 	}
 }

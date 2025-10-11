@@ -1,125 +1,64 @@
-import type { ServerType } from "@hono/node-server";
-import { serve } from "@hono/node-server";
-import type { AddressInfo } from "node:net";
-import app from "./app";
-import { Hono } from "hono";
+import type { KeetaAnchorFXServerConfig } from "@keetanetwork/anchor/services/fx/server";
+import { KeetaNetFXAnchorHTTPServer } from "@keetanetwork/anchor/services/fx/server";
 
-import { cors } from "hono/cors";
-import { createMiddleware } from "hono/factory";
-import * as Anchor from "@keetanetwork/anchor";
-import { ValiError } from "valibot";
-import { AppError } from "./error";
+import type * as Anchor from "@keetanetwork/anchor";
+import { createFXHandler } from "./app";
+import { getTokenInfo } from "./utils/network";
 
-type ServerLogger = Pick<typeof console, 'log' | 'warn' | 'error' | 'debug' | 'info'>
-
-export interface ApiServerConfig {
-	server: {
-		prefix?: string;
-		port?: number;
-		logger?: ServerLogger;
-	};
-
-	/**
-	 * The Keeta Network configuration
-	 */
-	keetaNet: {
-		/**
-		 * The FX anchor account
-		 */
-		fxAccount: NonNullable<Parameters<typeof Anchor.KeetaNet.UserClient.fromNetwork>[1]>;
-		resolverAccount?: InstanceType<typeof Anchor.KeetaNet.lib.Account>;
-	}
+/**
+ * Configuration interface for creating a KeetaNet FX Anchor server.
+ *
+ * Extends the base KeetaAnchorFXServerConfig with required account and client properties.
+ *
+ * @property account - KeetaNet account instance created from a seed, used for signing quotes and authenticating server operations
+ * @property userClient - KeetaNet UserClient instance for network interactions and token operations
+ * @property port - Port number on which the HTTP server will listen (inherited from KeetaAnchorFXServerConfig)
+ * @property logger - Optional logger instance for debugging and server operation logs (inherited from KeetaAnchorFXServerConfig)
+ */
+export interface ServerConfig extends Pick<KeetaAnchorFXServerConfig, 'port' | 'logger'> {
+	account: ReturnType<typeof Anchor.KeetaNet.lib.Account.fromSeed>
+	userClient: InstanceType<typeof Anchor.KeetaNet.UserClient>
 }
 
-export interface ServerEnv {
-	Variables: {
-		log?: ServerLogger;
-		config: ApiServerConfig;
-		userClient: InstanceType<typeof Anchor.KeetaNet.UserClient>;
-		fxClient: InstanceType<typeof Anchor.FX.Client>;
-	};
-}
+/**
+ * Creates and starts a KeetaNet FX Anchor HTTP server with custom exchange rate logic.
+ *
+ * This function initializes an FX Anchor server that handles exchange conversion requests
+ * between different tokens on the KeetaNet network. User is responsible for managing rates.
+ *
+ * @param config - Server configuration object
+ * @param config.account - KeetaNet account used for signing quotes and server operations
+ * @param config.userClient - Client instance for interacting with the KeetaNet network
+ * @param config.port - Port number on which the HTTP server will listen
+ * @param config.logger - Optional logger instance for debugging and logging server operations
+ * @returns A promise that resolves to the initialized and started KeetaNetFXAnchorHTTPServer instance
+ *
+ * @example
+ * ```typescript
+ * const server = await createServer({
+ *   account: myAccount,
+ *   userClient: myClient,
+ *   port: 3000,
+ *   logger: console
+ * });
+ * ```
+ */
+export async function createServer({ account, userClient, port, logger }: ServerConfig) {
+	// Get base token info
+	const baseTokenInfo = await getTokenInfo(userClient, userClient.baseToken)
 
-export function createApp(config: ApiServerConfig): Hono<ServerEnv> {
-	// Default values for prefix and port
-	const { prefix = "/api" } = config.server;
+	// Set up the FX Anchor HTTP server
+	const server = new KeetaNetFXAnchorHTTPServer({
+		account,
+		client: userClient,
+		quoteSigner: account,
+		port,
+		logger,
+		fx: createFXHandler({ userClient, logger, account, baseTokenInfo })
+	})
 
-	const logger = config.server.logger;
+	// Start the server
+	await server.start()
 
-	// KeetaNet Setup
-	const fxAccount = config.keetaNet.fxAccount;
-	const userClient = Anchor.KeetaNet.UserClient.fromNetwork('test', fxAccount);
-	const fxClient = new Anchor.FX.Client(
-		userClient,
-		config.keetaNet.resolverAccount ? ({
-			root: config.keetaNet.resolverAccount
-		}) : (
-			undefined
-		)
-	);
-
-	logger?.info(`Using FX Anchor account: ${fxAccount.publicKeyString.get()}`);
-
-	// Create a new Hono app
-	const honoApp = new Hono<ServerEnv>();
-
-	// Enable CORS for all origins
-	honoApp.use(cors({ origin: "*" }));
-
-	// Set the config in the context
-	honoApp.use(
-		createMiddleware<ServerEnv>(
-			async (c, next) => {
-				c.set("config", config);
-				c.set("log", logger);
-				c.set("userClient", userClient);
-				c.set("fxClient", fxClient);
-				await next();
-			}
-		)
-	);
-
-	// Use the main app
-	honoApp.route(prefix, app);
-
-	// Handle not found
-	honoApp.notFound((c) => c.json({ ok: false, error: "Not Found" }, 404));
-
-	// Handle errors
-	honoApp.onError((err, c) => {
-		if (err instanceof ValiError || err instanceof AppError) {
-			logger?.debug(`${c.req.method} ${c.req.url} - Error:`, err.message);
-			return(c.json(
-				{ ok: false, error: err.message ?? "Unknown error occurred" },
-				400
-			));
-		}
-
-		logger?.error(`${c.req.method} ${c.req.url} - Error:`, err);
-		return(c.json(
-			{ ok: false, error: err.message ?? "Unknown error occurred" },
-			500
-		));
-	});
-
-	return(honoApp);
-}
-
-export async function createApiServer(config: ApiServerConfig) {
-	// Default value for port
-	const { port = 8080 } = config.server;
-
-	// Start the app
-	const { server, info }: { server: ServerType; info: AddressInfo } =
-		await new Promise(resolve => {
-			const serverApp = createApp(config);
-
-			// Start the server
-			const createdServer = serve(
-				{ fetch: serverApp.fetch, port },
-				(info) => resolve({ server: createdServer, info })
-			);
-		});
-
-	return({ server, info });
+	return(server);
 }

@@ -1,37 +1,18 @@
 import type * as Anchor from "@keetanetwork/anchor";
 
-interface Metadata {
-	decimalPlaces: number
-}
-
-export function decodeTokenMetadata(metadata: string): Metadata {
-	const retval: Metadata = {
-		decimalPlaces: 0
-	}
-
-	try {
-		const parsed: unknown = JSON.parse(atob(metadata))
-		if (
-			parsed &&
-			typeof parsed === "object" &&
-			"decimalPlaces" in parsed &&
-			(typeof parsed.decimalPlaces === "string" || typeof parsed.decimalPlaces === "number")
-		) {
-			retval.decimalPlaces = Number(parsed.decimalPlaces)
-		}
-	} catch {
-		/* */
-	}
-
-	return(retval);
-}
-
-interface TokenInfo {
-	name: string
-	description: string
+export interface TokenInfo {
+	currencyCode: string
 	decimalPlaces: number
 }
 const tokensMemCache = new Map<string, TokenInfo>();
+
+export function getTokenDecimals(metadata: string): number {
+	const tokenMetadata: unknown = JSON.parse(Buffer.from(metadata, 'base64').toString());
+	if (tokenMetadata && typeof tokenMetadata === 'object' && 'decimalPlaces' in tokenMetadata && typeof tokenMetadata.decimalPlaces === 'number') {
+		return(tokenMetadata.decimalPlaces)
+	}
+	return(0);
+}
 
 export async function getTokenInfo(userClient: InstanceType<typeof Anchor.KeetaNet.UserClient>, account: InstanceType<typeof Anchor.KeetaNet.lib.Account> | string) {
 	const cached = tokensMemCache.get(typeof account === "string" ? account : account.publicKeyString.get())
@@ -39,20 +20,11 @@ export async function getTokenInfo(userClient: InstanceType<typeof Anchor.KeetaN
 		return(cached)
 	}
 
-	let tokenInfo: TokenInfo;
-	if (userClient.baseToken.comparePublicKey(account)) {
-		tokenInfo = {
-			name: 'KTA',
-			description: 'Keeta',
-			decimalPlaces: 9
-		}
-	} else {
-		const { info } = await userClient.client.getAccountInfo(account)
-		tokenInfo = {
-			...info,
-			...decodeTokenMetadata(info.metadata)
-		}
-	}
+	const { info } = await userClient.client.getAccountInfo(account)
+	const tokenInfo = {
+		currencyCode: info.name.length > 0 ? info.name : info.description.toUpperCase(),
+		decimalPlaces: getTokenDecimals(info.metadata)
+	} satisfies TokenInfo
 
 	tokensMemCache.set(typeof account === "string" ? account : account.publicKeyString.get(), tokenInfo)
 	return(tokenInfo)

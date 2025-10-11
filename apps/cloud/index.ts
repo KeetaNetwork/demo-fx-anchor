@@ -58,11 +58,6 @@ interface KeetaNetDemoFXProviderArgs {
 		 * The seed to use for the KeetaNet network
 		 */
 		seed: pulumi.Input<string>;
-
-		/**
-		 * The public key of the resolver
-		 */
-		resolverPublicKey?: pulumi.Input<string>;
 	}
 
 
@@ -172,14 +167,6 @@ export class KeetaNetDemoFXProvider extends pulumi.ComponentResource {
 									throw(new Error('config.app.seed is required'));
 								}
 								return(seed);
-							})
-						}, {
-							name: "APP_RESOLVER_ACCOUNT",
-							value: pulumi.output(this.config.app.resolverPublicKey).apply(function(resolverPublicKey) {
-								if (resolverPublicKey === undefined || resolverPublicKey === null || resolverPublicKey === '') {
-									return("");
-								}
-								return(resolverPublicKey);
 							})
 						}]
 					}]

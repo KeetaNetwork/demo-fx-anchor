@@ -19,7 +19,6 @@ const ip = new gcp.compute.GlobalAddress(`demo-fx-provider-${deploymentName}-ip`
 
 const stackConfig = new pulumi.Config();
 const appSeed = stackConfig.requireSecret('DEMO_ANCHOR_SEED');
-const appResolverPublicKey = stackConfig.require('DEMO_ANCHOR_RESOLVER_PUBLIC_KEY');
 
 new KeetaNetDemoFXProvider(`demo-fx-provider-${deploymentName}`, {
 	domain: 'demo-fx-provider.dev.keeta.com',
@@ -36,8 +35,7 @@ new KeetaNetDemoFXProvider(`demo-fx-provider-${deploymentName}`, {
 		}
 	},
 	app: {
-		seed: appSeed,
-		resolverPublicKey: appResolverPublicKey
+		seed: appSeed
 	},
 	ipAddress: ip.address
 });

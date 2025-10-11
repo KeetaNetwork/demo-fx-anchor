@@ -1,65 +1,43 @@
-import { KeetaNet } from "@keetanetwork/anchor";
-import type { ApiServerConfig } from "./server";
-import { createApiServer } from "./server";
+import * as Anchor from "@keetanetwork/anchor";
 import { getEnv } from "./utils/config";
-import type { LogTargetLevel } from '@keetanetwork/anchor/lib/log/common';
+import type { LogTargetLevel } from "@keetanetwork/anchor/lib/log/common";
+import LogTargetConsole from "@keetanetwork/anchor/lib/log/target_console";
 import { Log as Logger } from '@keetanetwork/anchor/lib/log';
-import { LogTargetConsole } from '@keetanetwork/anchor/lib/log/target_console';
-
-const AsyncDisposableStack = KeetaNet.lib.Utils.Helper.AsyncDisposableStack;
+import { createServer } from "./server";
 
 async function main(): Promise<0 | 1> {
+	/**
+	 * Configure logging
+	 */
 	// eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-	const targetLevel = getEnv('APP_LOG_LEVEL', 'WARN') as LogTargetLevel;
+	const logLevel = getEnv('APP_LOG_LEVEL', 'WARN') as LogTargetLevel;
 	const logger = new Logger();
-	logger.registerTarget(new LogTargetConsole({
-		logLevel: targetLevel
-	}));
+	logger.registerTarget(new LogTargetConsole({ logLevel }));
 	logger.startAutoSync();
-	const cleanup = new AsyncDisposableStack();
-	cleanup.defer(function() {
-		logger.stopAutoSync();
-	});
 
-	const resolver = getEnv('APP_RESOLVER_ACCOUNT', '').trim();
+	/**
+	 * Set up KeetaNet client
+	 */
+	const account = Anchor.KeetaNet.lib.Account.fromSeed(getEnv('APP_SEED'), 0);
+	const userClient = Anchor.KeetaNet.UserClient.fromNetwork('test', account);
 
-	const config: ApiServerConfig = {
-		server: {
-			prefix: getEnv('APP_PREFIX', '/api'),
-			port: parseInt(getEnv('PORT', '8080'), 10),
-			logger
-		},
+	/**
+	 * Set up the HTTP server
+	 */
+	const port = parseInt(getEnv('PORT', '8080'), 10)
 
-		keetaNet: {
-			fxAccount: KeetaNet.lib.Account.fromSeed(getEnv('APP_SEED'), 0),
-			resolverAccount: resolver.length > 0 ? KeetaNet.lib.Account.fromPublicKeyString(resolver) : undefined
-		}
-	}
+	logger.log(`Starting Server on Port: ${port}`)
+	// Set up the FX Anchor HTTP server
+	await using server = await createServer({ account, userClient, port, logger })
 
-	let server: Awaited<ReturnType<typeof createApiServer>>['server'];
-	try {
-		let info;
-		({ server, info } = await createApiServer(config));
+	logger.log(`Server Started at ${server.url}`)
+	// Wait for the server to stop
+	await server.wait();
 
-		const address = info.address === "::" ? "localhost" : info.address;
-		logger?.log(`Server is running at http://${address}:${info.port}`);
+	// Cleanup
+	logger.stopAutoSync();
 
-		// graceful shutdown
-		process.on('beforeExit', function() {
-			if (server.listening) {
-				server.close()
-			}
-		});
-	} catch (error: unknown) {
-		logger?.error("Error starting server:", error);
-	}
-
-	await new Promise<void>(function(resolve) {
-		server.on('close', function() {
-			resolve();
-		});
-	});
-
+	// Exit
 	return(0);
 }
 

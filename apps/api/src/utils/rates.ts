@@ -7,6 +7,10 @@ export const precision = 16
 
 export const rateFactor = 10 ** precision
 
+/**
+ * For simplicity these exchange rates use the token name
+ * For real usage the token publicKeyString should be used as more reliable match
+ */
 const USDRates: ExchangeRate[] = [
 	{
 		'currencyCode': 'KTA',

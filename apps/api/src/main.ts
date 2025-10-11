@@ -26,9 +26,11 @@ async function main(): Promise<0 | 1> {
 	 */
 	const port = parseInt(getEnv('PORT', '8080'), 10)
 
+	logger.log(`Starting Server on Port: ${port}`)
 	// Set up the FX Anchor HTTP server
 	await using server = await createServer({ account, userClient, port, logger })
 
+	logger.log(`Server Started at ${server.url}`)
 	// Wait for the server to stop
 	await server.wait();
 

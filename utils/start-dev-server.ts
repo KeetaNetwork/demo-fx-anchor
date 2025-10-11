@@ -29,14 +29,11 @@ function runSubprojectServer(
 }
 
 const apiPort = String(
-	process.env.API_PORT ? parseInt(process.env.API_PORT, 10) : 3002
+	process.env.API_PORT ? parseInt(process.env.API_PORT, 10) : 8080
 );
-// const clientPort = process.env.CLIENT_PORT ? parseInt(process.env.CLIENT_PORT, 10) : 3001;
 
 const processes = [
 	runSubprojectServer("apps/api", "npm", ["run", "dev"], { PORT: apiPort })
-	// runSubprojectServer('apps/api', 'npm', ['run', 'dev'], { PORT: String(apiPort), APP_CLIENT_URL: `http://localhost:${clientPort}` }),
-	// runSubprojectServer('apps/client', 'npm', ['run', 'dev'], { PORT: String(clientPort), VITE_API_URL: `http://localhost:${apiPort}/api` }),
 ];
 
 process.on("SIGINT", () => {

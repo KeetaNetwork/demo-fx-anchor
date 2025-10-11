@@ -6,11 +6,6 @@ A demonstration Foreign Exchange (FX) anchor implementation for the Keeta Networ
 
 This project implements an FX Anchor server that handles foreign exchange conversion requests between various currencies on the Keeta Network. It demonstrates how to build a compliant anchor service that can provide conversion rates, process exchange requests, and integrate with the Keeta Network infrastructure.
 
-The anchor supports multiple currencies including:
-
--   **Cryptocurrencies**: KTA, BTC, CBBTC, USDC
--   **Fiat currencies**: USD, CAD, GBP, EUR, MXN, BRL
-
 ## Architecture
 
 The project is organized as a monorepo with the following structure:
@@ -33,7 +28,6 @@ The project is organized as a monorepo with the following structure:
 
 ## Features
 
--   **Real-time Currency Conversion**: Calculates exchange rates between supported token pairs
 -   **Affinity-based Conversions**: Supports both "from" and "to" currency affinity modes
 -   **Precision Handling**: Properly converts amounts between tokens with different precision
 -   **Zero-fee Demo Mode**: Configured with zero network and processing fees for demonstration purposes
@@ -121,23 +115,26 @@ demo-fx-anchor/
 │   └── cloud/                  # Pulumi infrastructure
 │       └── index.ts            # GCP deployment config
 ├── deployment/                 # Deployment configuration
-│   └── index.ts               # Pulumi stack setup
-├── utils/                     # Build and dev scripts
-├── Makefile                   # Build automation
-└── package.json              # Project metadata
+│   └── index.ts                # Pulumi stack setup
+├── utils/                      # Build and dev scripts
+├── Makefile                    # Build automation
+└── package.json                # Project metadata
 ```
 
 ### Key Implementation Details
 
 #### Exchange Rate Calculation
 
-The anchor uses a USD-based rate table for all conversions. When converting between two non-USD currencies:
+The anchor uses an example USD-based rate table for all conversions.
+The example rates use the token name for matching, however in production usage, using the token publicKeyString would be more reliable
+
+When converting between two non-USD currencies:
 
 1. Converts the source currency to USD
 2. Converts from USD to the destination currency
 3. Applies proper precision between different tokens for the conversions
 
-See `apps/api/src/utils/rates.ts` for the implementation.
+See `apps/api/src/utils/rates.ts` for the implementation.  For real-time rates, an integration with an external source would be required.
 
 #### Affinity Modes
 

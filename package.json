@@ -1,6 +1,6 @@
 {
 	"name": "@keetanetwork/demo-fx-anchor",
-	"version": "0.0.3",
+	"version": "0.0.4",
 	"description": "A demo FX anchor for Keeta Network",
 	"author": "Keeta, Inc",
 	"repository": "https://github.com/keetanetwork/demo-fx-anchor.git",
@@ -13,7 +13,6 @@
 		"test": "make test"
 	},
 	"devDependencies": {
-		"@keetanetwork/eslint-config-typescript": "1.4.6",
 		"tsx": "4.20.3",
 		"typescript": "5.6.3"
 	},

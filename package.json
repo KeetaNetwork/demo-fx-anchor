@@ -8,8 +8,6 @@
 	"private": true,
 	"scripts": {
 		"tsc": "tsc",
-		"dev": "make do-dev-server",
-		"build": "make dist",
 		"test": "make test",
 		"make:all": "make all",
 		"make:dist": "make dist",

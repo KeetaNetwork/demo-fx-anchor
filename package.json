@@ -14,7 +14,10 @@
 		"make:test": "make test",
 		"make:do-lint": "make do-lint",
 		"make:clean": "make clean",
-		"make:distclean": "make distclean"
+		"make:distclean": "make distclean",
+		"make:do-dev-server": "make do-dev-server",
+		"make:do-npm-pack": "make do-npm-pack",
+		"make:help": "make help"
 	},
 	"devDependencies": {
 		"tsx": "4.20.3",

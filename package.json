@@ -1,27 +1,33 @@
 {
-	"name": "@keetanetwork/demo-fx-anchor",
-	"version": "0.0.4",
-	"description": "A demo FX anchor for Keeta Network",
-	"author": "Keeta, Inc",
-	"repository": "https://github.com/keetanetwork/demo-fx-anchor.git",
-	"type": "module",
-	"private": true,
-	"scripts": {
-		"tsc": "tsc",
-		"dev": "make do-dev-server",
-		"build": "make dist",
-		"test": "make test"
-	},
-	"devDependencies": {
-		"tsx": "4.20.3",
-		"typescript": "5.6.3"
-	},
-	"dependencies": {
-		"@keetanetwork/pulumi-components": "1.0.79",
-		"@pulumi/gcp": "8.39.0",
-		"@pulumi/pulumi": "3.187.0"
-	},
-	"engines": {
-		"node": "20.18.0"
-	}
+  "name": "@keetanetwork/demo-fx-anchor",
+  "version": "0.0.4",
+  "description": "A demo FX anchor for Keeta Network",
+  "author": "Keeta, Inc",
+  "repository": "https://github.com/keetanetwork/demo-fx-anchor.git",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "tsc": "tsc",
+    "dev": "make do-dev-server",
+    "build": "make dist",
+    "test": "make test",
+    "make:all": "make all",
+    "make:dist": "make dist",
+    "make:test": "make test",
+    "make:do-lint": "make do-lint",
+    "make:clean": "make clean",
+    "make:distclean": "make distclean"
+  },
+  "devDependencies": {
+    "tsx": "4.20.3",
+    "typescript": "5.6.3"
+  },
+  "dependencies": {
+    "@keetanetwork/pulumi-components": "1.0.79",
+    "@pulumi/gcp": "8.39.0",
+    "@pulumi/pulumi": "3.187.0"
+  },
+  "engines": {
+    "node": "20.18.0"
+  }
 }

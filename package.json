@@ -1,6 +1,6 @@
 {
 	"name": "@keetanetwork/demo-fx-anchor",
-	"version": "0.0.4",
+	"version": "0.0.5",
 	"description": "A demo FX anchor for Keeta Network",
 	"author": "Keeta, Inc",
 	"repository": "https://github.com/keetanetwork/demo-fx-anchor.git",

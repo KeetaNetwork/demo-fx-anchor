@@ -17,6 +17,6 @@
 		"vitest": "3.2.4"
 	},
 	"dependencies": {
-		"@keetanetwork/anchor": "0.0.13"
+		"@keetanetwork/anchor": "0.0.50"
 	}
 }

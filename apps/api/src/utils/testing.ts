@@ -3,6 +3,11 @@ import * as Anchor from "@keetanetwork/anchor";
 import type { Logger } from '@keetanetwork/anchor/lib/log';
 import { expect } from "vitest";
 
+export type KeetaNetAccount = InstanceType<typeof KeetaNet.lib.Account>;
+export type KeetaNetAccountKeyedAccount = NonNullable<Parameters<typeof KeetaNet.UserClient.fromNetwork>[1]>;
+export type KeetaNetAccountTOKEN = InstanceType<typeof KeetaNet.lib.Account<typeof KeetaNet.lib.Account.AccountKeyAlgorithm.TOKEN>>;
+export type KeetaNetUserClient = InstanceType<typeof KeetaNet.UserClient>;
+
 const logOptions = { currentRequestInfo: { id: "TEST-SETUP" }}
 
 /**
@@ -64,7 +69,20 @@ async function waitUntilHaveBaseToken(userClient: InstanceType<typeof Anchor.Kee
 	} while (balance === 0n);
 }
 
-export async function setup(logger?: Logger) {
+export async function setup(logger?: Logger): Promise<{
+	fxAccount: KeetaNetAccountKeyedAccount,
+	fxUserClient: KeetaNetUserClient,
+
+	lpAccount: KeetaNetAccountKeyedAccount,
+	lpUserClient: KeetaNetUserClient,
+
+	tokens: {
+		USD: KeetaNetAccountTOKEN,
+		EUR: KeetaNetAccountTOKEN,
+		'$KTA': KeetaNetAccountTOKEN,
+		'$BTC': KeetaNetAccountTOKEN
+	}
+}> {
 	/**
 	 * Setup FX Provider
 	 */
@@ -120,7 +138,10 @@ export async function setup(logger?: Logger) {
 	});
 }
 
-export async function setupResolver(baseURL: string, fxUserClient: InstanceType<typeof Anchor.KeetaNet.UserClient>, tokens: Awaited<ReturnType<typeof setup>>['tokens'], logger?: Logger) {
+export async function setupResolver(baseURL: string, fxUserClient: InstanceType<typeof Anchor.KeetaNet.UserClient>, tokens: Awaited<ReturnType<typeof setup>>['tokens'], logger?: Logger): Promise<{
+	resolverAccount: KeetaNetAccountKeyedAccount,
+	resolverUserClient: KeetaNetUserClient
+}> {
 	/**
 	 * Setup resolver
 	 */

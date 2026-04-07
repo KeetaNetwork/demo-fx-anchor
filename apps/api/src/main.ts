@@ -1,9 +1,10 @@
 import * as Anchor from "@keetanetwork/anchor";
 import { getEnv } from "./utils/config";
-import type { LogTargetLevel } from "@keetanetwork/anchor/lib/log/common";
 import LogTargetConsole from "@keetanetwork/anchor/lib/log/target_console";
 import { Log as Logger } from '@keetanetwork/anchor/lib/log';
 import { createServer } from "./server";
+
+type LogTargetLevel = NonNullable<NonNullable<ConstructorParameters<typeof LogTargetConsole>[0]>['logLevel']>;
 
 async function main(): Promise<0 | 1> {
 	/**

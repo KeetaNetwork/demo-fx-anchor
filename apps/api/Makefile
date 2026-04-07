@@ -13,7 +13,7 @@ help:
 	@echo "  distclean     - Removes all build artifacts and dependencies"
 
 test: node_modules
-	npm run vitest
+	npm run vitest -- --run
 
 do-dev-server: node_modules
 	npx tsx watch src/main.ts

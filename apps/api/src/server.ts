@@ -16,7 +16,7 @@ import { getTokenInfo } from "./utils/network";
  * @property logger - Optional logger instance for debugging and server operation logs (inherited from KeetaAnchorFXServerConfig)
  */
 export interface ServerConfig extends Pick<KeetaAnchorFXServerConfig, 'port' | 'logger'> {
-	account: ReturnType<typeof Anchor.KeetaNet.lib.Account.fromSeed>
+	account: NonNullable<Parameters<typeof Anchor.KeetaNet.UserClient.fromNetwork>[1]>,
 	userClient: InstanceType<typeof Anchor.KeetaNet.UserClient>
 }
 

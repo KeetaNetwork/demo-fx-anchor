@@ -1,3 +1,4 @@
+import { KeetaAnchorUserError } from "@keetanetwork/anchor/lib/error";
 import type { KeetaAnchorFXServerConfig } from "@keetanetwork/anchor/services/fx/server";
 import type { TokenInfo } from "./utils/network";
 import { getTokenInfo } from "./utils/network";
@@ -40,7 +41,7 @@ export function createFXHandler({ userClient, logger, account }: FXHandlerProps)
 			logger?.debug("Converted:", convertedAmount)
 
 			if (convertedAmount <= 0n) {
-				throw(new Error("Invalid converted amount"));
+				throw(new KeetaAnchorUserError("Requested amount is too small"));
 			}
 
 			/**

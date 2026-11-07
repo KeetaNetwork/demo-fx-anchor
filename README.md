@@ -36,7 +36,7 @@ The project is organized as a monorepo with the following structure:
 
 ## Prerequisites
 
--   **Node.js**: v20.18.0 (see `.nvmrc`)
+-   **Node.js**: v24.22.2 (see `.nvmrc`)
 -   **npm**: Latest version
 
 ## Installation

@@ -24,11 +24,11 @@
 		"typescript": "5.6.3"
 	},
 	"dependencies": {
-		"@keetanetwork/pulumi-components": "1.0.79",
-		"@pulumi/gcp": "8.39.0",
+		"@keetanetwork/pulumi-components": "1.0.93",
+		"@pulumi/gcp": "9.30.0",
 		"@pulumi/pulumi": "3.187.0"
 	},
 	"engines": {
-		"node": "20.18.0"
+		"node": "24.22.2"
 	}
 }

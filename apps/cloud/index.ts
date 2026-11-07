@@ -3,7 +3,7 @@ import * as pulumi from "@pulumi/pulumi";
 import * as gcp from "@pulumi/gcp";
 import * as path from "path";
 import { getPrefixHash, generateName } from './utils.js';
-import type { GCPRegion } from '@keetanetwork/pulumi-components/dist/packages/gcp/constants';
+import type { GCPRegion } from '@keetanetwork/pulumi-components/packages/gcp/constants.js';
 
 type ConfigImageRemote = Partial<Pick<Parameters<components.docker.RemoteDockerImage['_checkImage']>[2], 'serviceAccount' | 'bucket' | 'bindPermissions'>> & {
 	bucketConfig?: Partial<Pick<ConstructorParameters<typeof gcp.storage.Bucket>[1], 'logging'>>;

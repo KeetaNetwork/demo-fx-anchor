@@ -159,7 +159,9 @@ describe('Server', async () => {
 				logger.info(logOptions, "FX.Client", "Got quote")
 				logger.debug(logOptions, "FX.Client", "quote.quote =", quote.quote)
 
-				const createdExchange = await quote.createExchange()
+				// The wallet must cap the side the anchor sets: what it receives for "from", what it sends for "to"
+				const limits = test.affinity === 'from' ? { minReceive: test.expectedConvertedAmount } : { maxSend: test.expectedConvertedAmount }
+				const createdExchange = await quote.createExchange(undefined, { limits })
 				expect(createdExchange.exchange.exchangeID).toBeDefined()
 				logger.info(logOptions, "FX.Client", "Created exchange")
 				logger.debug(logOptions, "FX.Client", "createdExchange.exchange =", createdExchange.exchange)
@@ -180,10 +182,13 @@ describe('Server', async () => {
 			{ title: "negative amount", request: { from: usd, to: eur, amount: "-100", affinity: "from" }, error: /greater than zero/ },
 			{ title: "malformed from key", request: { from: badChecksum, to: eur, amount: "100", affinity: "from" }, error: /"from"/ },
 			{ title: "malformed to key", request: { from: eur, to: badChecksum, amount: "100", affinity: "from" }, error: /"to"/ },
+			// Rejected by the SDK's type check before the handler runs
+			{ title: "truncated from key", request: { from: "keeta_a", to: eur, amount: "1", affinity: "from" }, error: /Validation error on fields from/ },
+			{ title: "non-token from key", request: { from: KeetaNet.lib.Account.fromSeed(KeetaNet.lib.Account.generateRandomSeed(), 0).publicKeyString.get(), to: eur, amount: "1", affinity: "from" }, error: /Validation error on fields from/ },
 			{ title: "currency missing from the rate table", request: { from: tokens.JPY.publicKeyString.get(), to: eur, amount: "100", affinity: "from" }, error: /not supported/ }
 		] as const;
 
-		// The SDK's type check only lets token-prefixed keys through, so a non-token key is checked against the handler directly.
+		// The SDK's type check stops non-token keys before the handler, so check the handler's own guard directly.
 		it("rejects a non-token account key", async () => {
 			const handler = createFXHandler({ userClient: fxUserClient, logger, account: fxAccount, baseTokenInfo: { currencyCode: 'KTA', decimalPlaces: 9 }});
 			if (!('getConversionRateAndFee' in handler)) {

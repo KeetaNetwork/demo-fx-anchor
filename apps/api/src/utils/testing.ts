@@ -80,7 +80,9 @@ export async function setup(logger?: Logger): Promise<{
 		USD: KeetaNetAccountTOKEN,
 		EUR: KeetaNetAccountTOKEN,
 		'$KTA': KeetaNetAccountTOKEN,
-		'$BTC': KeetaNetAccountTOKEN
+		'$BTC': KeetaNetAccountTOKEN,
+		// Minted under a name the rate table does not list
+		JPY: KeetaNetAccountTOKEN
 	}
 }> {
 	/**
@@ -112,6 +114,7 @@ export async function setup(logger?: Logger): Promise<{
 	const currencyEUR = await buildTokenBlocks(createTokensBuilder, 2, 1_000_000_000_00n, "EUR"); // 1,000,000,000.00
 	const currencyKTA = await buildTokenBlocks(createTokensBuilder, 9, 1_000_000_000_000_000000000n, "KTA"); // 1,000,000,000,000.000000000
 	const currencyBTC = await buildTokenBlocks(createTokensBuilder, 8, 1_000_00000000n, "BTC"); // 1,000.00000000
+	const currencyJPY = await buildTokenBlocks(createTokensBuilder, 0, 1_000_000_000n, "JPY"); // 1,000,000,000
 	await lpUserClient.publishBuilder(createTokensBuilder);
 
 	// Send tokens to FX account
@@ -133,7 +136,8 @@ export async function setup(logger?: Logger): Promise<{
 			USD: currencyUSD,
 			EUR: currencyEUR,
 			'$KTA': currencyKTA,
-			'$BTC': currencyBTC
+			'$BTC': currencyBTC,
+			JPY: currencyJPY
 		}
 	});
 }

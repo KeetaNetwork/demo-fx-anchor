@@ -3,6 +3,7 @@ import { Log as Logger } from '@keetanetwork/anchor/lib/log';
 import { LogTargetConsole } from '@keetanetwork/anchor/lib/log/target_console';
 import { expectNonNullable, setup, setupResolver } from './utils/testing';
 import { createServer } from './server';
+import { createFXHandler } from './app';
 import * as Anchor from "@keetanetwork/anchor";
 
 const KeetaNet = Anchor.KeetaNet
@@ -158,7 +159,9 @@ describe('Server', async () => {
 				logger.info(logOptions, "FX.Client", "Got quote")
 				logger.debug(logOptions, "FX.Client", "quote.quote =", quote.quote)
 
-				const createdExchange = await quote.createExchange()
+				// The wallet must cap the side the anchor sets: what it receives for "from", what it sends for "to"
+				const limits = test.affinity === 'from' ? { minReceive: test.expectedConvertedAmount } : { maxSend: test.expectedConvertedAmount }
+				const createdExchange = await quote.createExchange(undefined, { limits })
 				expect(createdExchange.exchange.exchangeID).toBeDefined()
 				logger.info(logOptions, "FX.Client", "Created exchange")
 				logger.debug(logOptions, "FX.Client", "createdExchange.exchange =", createdExchange.exchange)
@@ -168,5 +171,47 @@ describe('Server', async () => {
 			})
 		}
 	})
+	describe("Invalid estimate requests", ({ sequential: it }) => {
+		const usd = tokens.USD.publicKeyString.get();
+		const eur = tokens.EUR.publicKeyString.get();
+		const badChecksum = `${usd.slice(0, -1)}${usd.endsWith('a') ? 'b' : 'a'}`;
+
+		const cases = [
+			{ title: "non-integer amount", request: { from: usd, to: eur, amount: "0.1", affinity: "from" }, error: /Invalid amount/ },
+			{ title: "zero amount", request: { from: usd, to: eur, amount: "0", affinity: "from" }, error: /greater than zero/ },
+			{ title: "negative amount", request: { from: usd, to: eur, amount: "-100", affinity: "from" }, error: /greater than zero/ },
+			{ title: "malformed from key", request: { from: badChecksum, to: eur, amount: "100", affinity: "from" }, error: /"from"/ },
+			{ title: "malformed to key", request: { from: eur, to: badChecksum, amount: "100", affinity: "from" }, error: /"to"/ },
+			// Rejected by the SDK's type check before the handler runs
+			{ title: "truncated from key", request: { from: "keeta_a", to: eur, amount: "1", affinity: "from" }, error: /Validation error on fields from/ },
+			{ title: "non-token from key", request: { from: KeetaNet.lib.Account.fromSeed(KeetaNet.lib.Account.generateRandomSeed(), 0).publicKeyString.get(), to: eur, amount: "1", affinity: "from" }, error: /Validation error on fields from/ },
+			{ title: "currency missing from the rate table", request: { from: tokens.JPY.publicKeyString.get(), to: eur, amount: "100", affinity: "from" }, error: /not supported/ }
+		] as const;
+
+		// The SDK's type check stops non-token keys before the handler, so check the handler's own guard directly.
+		it("rejects a non-token account key", async () => {
+			const handler = createFXHandler({ userClient: fxUserClient, logger, account: fxAccount, baseTokenInfo: { currencyCode: 'KTA', decimalPlaces: 9 }});
+			if (!('getConversionRateAndFee' in handler)) {
+				throw(new Error('handler is missing getConversionRateAndFee'));
+			}
+
+			const nonToken = KeetaNet.lib.Account.fromSeed(KeetaNet.lib.Account.generateRandomSeed(), 0).publicKeyString.get();
+			const request = { from: nonToken, to: eur, amount: "100", affinity: "from" } as unknown as Parameters<typeof handler.getConversionRateAndFee>[0];
+			await expect(handler.getConversionRateAndFee(request, { purpose: 'estimate' })).rejects.toThrow(/"from"/);
+		});
+
+		for (const test of cases) {
+			it(`returns 400 for ${test.title}`, async () => {
+				const response = await fetch(new URL('/api/getEstimate', baseURL), {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+					body: JSON.stringify({ request: test.request })
+				});
+				expect(response.status).toBe(400);
+				const body: unknown = await response.json();
+				expect(body).toMatchObject({ ok: false, error: expect.stringMatching(test.error) });
+			});
+		}
+	});
 })
 

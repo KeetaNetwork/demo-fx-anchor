@@ -1,3 +1,5 @@
+import { KeetaAnchorUserError } from "@keetanetwork/anchor/lib/error";
+
 interface ExchangeRate {
 	currencyCode: string;
 	rate: number;
@@ -63,7 +65,7 @@ export async function getRates(anchorCurrencyCode: string): Promise<ExchangeRate
 	const anchorUSDRate = USDRates.find(function(rate) { return(rate.currencyCode === anchorCurrencyCode); });
 
 	if (!anchorUSDRate) {
-		throw(new Error('Currency Not Supported'));
+		throw(new KeetaAnchorUserError(`Currency not supported: ${anchorCurrencyCode}`));
 	}
 
 	const rates: ExchangeRate[] = [];
@@ -120,7 +122,7 @@ export async function getExchangeRate(fromCurrencyCode: string, toCurrencyCode: 
 	});
 
 	if (!toCurrencyRate) {
-		throw(new Error(`Rate not supported for currency: ${toCurrencyCode}`));
+		throw(new KeetaAnchorUserError(`Rate not supported for currency: ${toCurrencyCode}`));
 	}
 
 	return({

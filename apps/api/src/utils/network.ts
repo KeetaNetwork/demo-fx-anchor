@@ -14,8 +14,9 @@ export function getTokenDecimals(metadata: string): number {
 	return(0);
 }
 
-export async function getTokenInfo(userClient: InstanceType<typeof Anchor.KeetaNet.UserClient>, account: InstanceType<typeof Anchor.KeetaNet.lib.Account> | string) {
-	const cached = tokensMemCache.get(typeof account === "string" ? account : account.publicKeyString.get())
+export async function getTokenInfo(userClient: InstanceType<typeof Anchor.KeetaNet.UserClient>, account: InstanceType<typeof Anchor.KeetaNet.lib.Account>) {
+	const publicKey = account.publicKeyString.get()
+	const cached = tokensMemCache.get(publicKey)
 	if (cached) {
 		return(cached)
 	}
@@ -26,7 +27,7 @@ export async function getTokenInfo(userClient: InstanceType<typeof Anchor.KeetaN
 		decimalPlaces: getTokenDecimals(info.metadata)
 	} satisfies TokenInfo
 
-	tokensMemCache.set(typeof account === "string" ? account : account.publicKeyString.get(), tokenInfo)
+	tokensMemCache.set(publicKey, tokenInfo)
 	return(tokenInfo)
 }
 

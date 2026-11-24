@@ -9,8 +9,8 @@ import type { ServerConfig } from "./server";
 const KeetaNet = Anchor.KeetaNet;
 
 /**
- * Parse a user-provided token public key, rejecting malformed keys and
- * non-token accounts with a user error instead of an internal error.
+ * Parse a user-provided token public key, throwing a user error for a
+ * malformed key or a non-token account.
  */
 function parseTokenPublicKey(publicKey: string, field: string) {
 	try {

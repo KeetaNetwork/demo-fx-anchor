@@ -3,6 +3,7 @@ import { Log as Logger } from '@keetanetwork/anchor/lib/log';
 import { LogTargetConsole } from '@keetanetwork/anchor/lib/log/target_console';
 import { expectNonNullable, setup, setupResolver } from './utils/testing';
 import { createServer } from './server';
+import { createFXHandler } from './app';
 import * as Anchor from "@keetanetwork/anchor";
 
 const KeetaNet = Anchor.KeetaNet
@@ -178,8 +179,21 @@ describe('Server', async () => {
 			{ title: "zero amount", request: { from: usd, to: eur, amount: "0", affinity: "from" }, error: /greater than zero/ },
 			{ title: "negative amount", request: { from: usd, to: eur, amount: "-100", affinity: "from" }, error: /greater than zero/ },
 			{ title: "malformed from key", request: { from: badChecksum, to: eur, amount: "100", affinity: "from" }, error: /"from"/ },
-			{ title: "malformed to key", request: { from: eur, to: badChecksum, amount: "100", affinity: "from" }, error: /"to"/ }
+			{ title: "malformed to key", request: { from: eur, to: badChecksum, amount: "100", affinity: "from" }, error: /"to"/ },
+			{ title: "currency missing from the rate table", request: { from: tokens.JPY.publicKeyString.get(), to: eur, amount: "100", affinity: "from" }, error: /not supported/ }
 		] as const;
+
+		// The SDK's type check only lets token-prefixed keys through, so a non-token key is checked against the handler directly.
+		it("rejects a non-token account key", async () => {
+			const handler = createFXHandler({ userClient: fxUserClient, logger, account: fxAccount, baseTokenInfo: { currencyCode: 'KTA', decimalPlaces: 9 }});
+			if (!('getConversionRateAndFee' in handler)) {
+				throw(new Error('handler is missing getConversionRateAndFee'));
+			}
+
+			const nonToken = KeetaNet.lib.Account.fromSeed(KeetaNet.lib.Account.generateRandomSeed(), 0).publicKeyString.get();
+			const request = { from: nonToken, to: eur, amount: "100", affinity: "from" } as unknown as Parameters<typeof handler.getConversionRateAndFee>[0];
+			await expect(handler.getConversionRateAndFee(request, { purpose: 'estimate' })).rejects.toThrow(/"from"/);
+		});
 
 		for (const test of cases) {
 			it(`returns 400 for ${test.title}`, async () => {

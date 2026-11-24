@@ -168,5 +168,31 @@ describe('Server', async () => {
 			})
 		}
 	})
+	describe("Invalid estimate requests", ({ sequential: it }) => {
+		const usd = tokens.USD.publicKeyString.get();
+		const eur = tokens.EUR.publicKeyString.get();
+		const badChecksum = `${usd.slice(0, -1)}${usd.endsWith('a') ? 'b' : 'a'}`;
+
+		const cases = [
+			{ title: "non-integer amount", request: { from: usd, to: eur, amount: "0.1", affinity: "from" }, error: /Invalid amount/ },
+			{ title: "zero amount", request: { from: usd, to: eur, amount: "0", affinity: "from" }, error: /greater than zero/ },
+			{ title: "negative amount", request: { from: usd, to: eur, amount: "-100", affinity: "from" }, error: /greater than zero/ },
+			{ title: "malformed from key", request: { from: badChecksum, to: eur, amount: "100", affinity: "from" }, error: /"from"/ },
+			{ title: "malformed to key", request: { from: eur, to: badChecksum, amount: "100", affinity: "from" }, error: /"to"/ }
+		] as const;
+
+		for (const test of cases) {
+			it(`returns 400 for ${test.title}`, async () => {
+				const response = await fetch(new URL('/api/getEstimate', baseURL), {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+					body: JSON.stringify({ request: test.request })
+				});
+				expect(response.status).toBe(400);
+				const body: unknown = await response.json();
+				expect(body).toMatchObject({ ok: false, error: expect.stringMatching(test.error) });
+			});
+		}
+	});
 })
 
